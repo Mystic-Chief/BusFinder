@@ -1,0 +1,34 @@
+# Ignore Python virtual environment
+venv/
+BusFinder/
+
+# Ignore Conda virtual environments
+.env/
+*.conda
+*.ipynb_checkpoints
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore Python bytecode and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore data files
+*.csv
+*.json
+*.log
+
+# Ignore IDE specific files
+.vscode/
+.idea/
+*.sublime-workspace
+
+# Ignore node_modules (when we add frontend)
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
