@@ -1,42 +1,75 @@
-import pytesseract
-from pdf2image import convert_from_path
-import re
-from collections import defaultdict
+import pandas as pd
+import glob
+import os
+from pymongo import MongoClient
 
-pdf_path = r"D:\Projects\BusFinder\backend\data\42 BUSES FROM VADODARA GENERALSHIFT 11.11.2024.pdf"
+# MongoDB Connection
+MONGO_URI = "mongodb://localhost:27017/"
+DATABASE_NAME = "BusFinder"
+COLLECTION_NAME = "bus_routes"
 
-bus_stops = defaultdict(list)
+# Connect to MongoDB
+client = MongoClient(MONGO_URI)
+db = client[DATABASE_NAME]
+collection = db[COLLECTION_NAME]
 
-bus_number_pattern = re.compile(r'\b(KT|PT)\s*-\s*\d+\b')
-bus_stop_pattern = re.compile(r'^[A-Z][A-Z0-9\-().,\s]*$', re.MULTILINE)
-gujarati_pattern = re.compile(r'[\u0A80-\u0AFF]')
+# Delete all existing data before inserting new data
+print("❌ Deleting existing bus routes...")
+collection.delete_many({})  # Removes all existing bus routes
+print("✅ All bus routes deleted. Ready to insert new data.")
 
-def extract_bus_data(pdf_path):
-    images = convert_from_path(pdf_path)
-    current_bus_number = None
-    
-    for image in images:
-        text = pytesseract.image_to_string(image)
-        if not text:
-            continue
-        
-        lines = text.split("\n")
-        for line in lines:
-            if gujarati_pattern.search(line):
-                continue
+# Define the data directory path
+DATA_DIR = os.path.join(os.getcwd(), "backend", "data")
 
-            bus_match = bus_number_pattern.search(line)
-            if bus_match:
-                current_bus_number = bus_match.group()
-                continue
-            
-            stop_match = bus_stop_pattern.match(line.strip())
-            if stop_match and current_bus_number:
-                bus_stops[current_bus_number].append(line.strip())
-    
-    return bus_stops
+# Find all .xlsx files in the data directory
+xlsx_files = glob.glob(os.path.join(DATA_DIR, "*.xlsx"))
 
-bus_data = extract_bus_data(pdf_path)
+if not xlsx_files:
+    print("⚠️ No Excel files found in the data directory.")
+else:
+    for file_path in xlsx_files:
+        print(f"\n📂 Processing file: {file_path}")
 
-for bus, stops in bus_data.items():
-    print(f"{bus}: {', '.join(stops)}")
+        # Load the Excel file
+        xls = pd.ExcelFile(file_path)
+        sheet_names = xls.sheet_names
+        print("📄 Available sheets:", sheet_names)
+
+        # Read the first sheet
+        df_cleaned = pd.read_excel(xls, sheet_name=sheet_names[0], skiprows=1)
+
+        # Drop empty rows/columns
+        df_cleaned = df_cleaned.dropna(axis=1, how='all')
+        df_cleaned = df_cleaned.dropna(axis=0, how='all')
+        df_cleaned.reset_index(drop=True, inplace=True)
+
+        # Convert stops to lowercase and clean them
+        bus_routes = []
+
+        for col in df_cleaned.columns:
+            bus_code = None
+            stops = []
+
+            for value in df_cleaned[col]:
+                if isinstance(value, str) and ('PT -' in value or 'KT -' in value):
+                    if bus_code and stops:
+                        bus_routes.append({"Bus Code": bus_code, "Stops": [stop.lower().strip() for stop in stops]})
+
+                    bus_code = value
+                    stops = []
+                elif isinstance(value, (int, float)):
+                    if bus_code and stops:
+                        bus_routes.append({"Bus Code": bus_code, "Stops": [stop.lower().strip() for stop in stops]})
+                        bus_code = None
+                        stops = []
+                elif bus_code:
+                    stops.append(value)
+
+        # Insert new data into MongoDB
+        if bus_routes:
+            collection.insert_many(bus_routes, ordered=False)
+            print(f"✅ Inserted {len(bus_routes)} bus routes into MongoDB.")
+
+# Close MongoDB connection
+client.close()
+print("✅ MongoDB connection closed.")
