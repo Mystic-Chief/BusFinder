@@ -3,9 +3,11 @@ import BusSearch from "./components/BusSearch";
 
 function App() {
   return (
-    <div>
-      <h1>Bus Finder</h1>
-      <BusSearch />
+    <div className="app-container">
+      <h1>🚌 Bus Finder</h1>
+      <div className="card">
+        <BusSearch />
+      </div>
     </div>
   );
 }

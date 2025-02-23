@@ -1,92 +1,145 @@
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+  
+    /* Updated color scheme */
+    color-scheme: light dark;
+    color: #2c3e50;
+    background-color: #f5f6fa;
+  
+    /* Gradient background */
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+  
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  a:hover {
-    color: #747bff;
+  
+  body {
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 320px;
+    min-height: 100vh;
   }
+  
+  #root {
+    width: 100%;
+    max-width: 1280px;
+    padding: 2rem;
+    text-align: center;
+  }
+  
+  /* Updated header styling */
+  h1 {
+    font-size: 3.5rem;
+    line-height: 1.2;
+    margin-bottom: 2rem;
+    color: #2c3e50;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  
+  /* Modern card styling */
+  .card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    padding: 2.5rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    margin: 2rem auto;
+    max-width: 800px;
+  }
+  
+  /* Improved button styling */
   button {
-    background-color: #f9f9f9;
+    border-radius: 12px;
+    border: none;
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    background: #646cff;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
   }
-}
-
-.autocomplete-dropdown {
-  position: absolute;
-  background: black;
-  border: 1px solid #ccc;
-  max-height: 200px;
-  overflow-y: auto;
-  list-style: none;
-  padding: 0;
-  width: 300px;
-  margin-top: 5px;
-  box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-}
-
-.autocomplete-dropdown li {
-  padding: 10px;
-  cursor: pointer;
-}
-
-.autocomplete-dropdown li:hover {
-  background: #f0f0f0;
-  color: black;
-}
-
+  
+  button:hover {
+    background: #535bf2;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+  }
+  
+  button:active {
+    transform: translateY(0);
+  }
+  
+  /* Enhanced autocomplete styling */
+  .autocomplete-dropdown {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+    list-style: none;
+    padding: 0.5rem;
+    width: 100%;
+    margin-top: 0.5rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    z-index: 1000;
+    border: 1px solid rgba(0,0,0,0.1);
+  }
+  
+  .autocomplete-dropdown li {
+    padding: 1rem;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    color: #2c3e50;
+    font-weight: 500;
+  }
+  
+  .autocomplete-dropdown li:hover {
+    background: #646cff;
+    color: white;
+    transform: scale(1.02);
+  }
+  
+  /* Responsive design */
+  @media (max-width: 768px) {
+    #root {
+      padding: 1rem;
+    }
+  
+    h1 {
+      font-size: 2.5rem;
+    }
+  
+    .card {
+      padding: 1.5rem;
+      margin: 1rem;
+    }
+  }
+  
+  /* Loading animation */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .app-container {
+    animation: fadeIn 0.5s ease-out;
+  }
