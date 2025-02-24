@@ -1,0 +1,87 @@
+.admin-upload-container {
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.upload-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.file-input-container {
+    position: relative;
+    overflow: hidden;
+    display: inline-block;
+}
+
+.file-input-label {
+    display: block;
+    padding: 1.2rem 2rem;
+    background: #646cff;
+    color: white;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    font-weight: 500;
+}
+
+.file-input-label:hover {
+    background: #535bf2;
+    transform: translateY(-2px);
+}
+
+input[type="file"] {
+    position: absolute;
+    left: -9999px;
+}
+
+.upload-progress {
+    width: 100%;
+    height: 20px;
+    background: #f0f0f0;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar {
+    height: 100%;
+    background: #646cff;
+    transition: width 0.3s ease;
+}
+
+.upload-progress span {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: bold;
+}
+
+.upload-button {
+    padding: 1rem 2rem;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.upload-button:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
+}
+
+.upload-button:hover:not(:disabled) {
+    background: #45a049;
+    transform: translateY(-2px);
+}
