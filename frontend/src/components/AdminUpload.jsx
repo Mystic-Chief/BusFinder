@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import "../components/AdminUpload.css"
 
 const AdminUpload = () => {
     const [file, setFile] = useState(null);
@@ -49,13 +50,32 @@ const AdminUpload = () => {
 
     return (
         <div className="admin-upload-container">
-            <h2>Admin Excel Upload</h2>
-            <input type="file" accept=".xlsx" onChange={handleFileChange} disabled={uploading} />
-            <button onClick={handleUpload} disabled={!file || uploading}>
-                {uploading ? `Processing... ${progress}%` : 'Upload & Process'}
-            </button>
-            <ToastContainer />
-        </div>
+      <h2>Admin Excel Upload</h2>
+      
+      <div className="file-upload-container">
+       
+        <input
+          type="file"
+          id="fileInput"
+          className="hidden-file-input"
+          accept=".xlsx"
+          onChange={handleFileChange}
+          disabled={uploading}
+        />
+
+        <label htmlFor="fileInput" className="custom-file-label">
+          Choose File
+        </label>
+  
+        {file && <div className="file-name">{file.name}</div>}
+      </div>
+
+      <button onClick={handleUpload} disabled={!file || uploading}>
+        {uploading ? `Processing... ${progress}%` : "Upload & Process"}
+      </button>
+
+      <ToastContainer />
+    </div>
     );
 };
 
