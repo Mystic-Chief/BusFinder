@@ -1,10 +1,61 @@
 const express = require("express");
 const { MongoClient } = require("mongodb");
 const cors = require("cors");
+const multer = require("multer");
+const path = require("path");
+const { exec } = require("child_process");
+const fs = require("fs");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const UPLOADS_DIR = path.join(__dirname, "uploads");
+
+// Ensure uploads directory exists
+if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR);
+}
+
+// Configure Multer to handle file uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, UPLOADS_DIR);
+    },
+    filename: (req, file, cb) => {
+        cb(null, `${Date.now()}-${file.originalname}`);
+    },
+});
+const upload = multer({ storage });
+
+// API to handle file upload and process with Python script
+app.post("/upload", upload.single("excelFile"), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ success: false, message: "No file uploaded." });
+    }
+
+    const filePath = path.join(UPLOADS_DIR, req.file.filename);
+    console.log(`📂 File uploaded: ${filePath}`);
+
+    // Run the Python script with the uploaded file
+    const scriptPath = path.join(__dirname, "scripts", "process_pdf.py");
+    exec(`set PYTHONIOENCODING=utf-8 && python "${scriptPath}" "${filePath}"`, (error, stdout, stderr) => {
+
+        // Delete the file after processing
+        fs.unlink(filePath, (err) => {
+            if (err) console.error("⚠️ Error deleting file:", err);
+            else console.log("✅ File deleted after processing.");
+        });
+
+        if (error) {
+            console.error("❌ Python Script Error:", stderr);
+            return res.status(500).json({ success: false, message: "Error processing file.", error: stderr });
+        }
+
+        console.log("✅ Python Script Output:", stdout);
+        return res.json({ success: true, message: "File processed successfully.", output: stdout });
+    });
+});
 
 const MONGO_URI = "mongodb://localhost:27017/";
 const DATABASE_NAME = "BusFinder";
