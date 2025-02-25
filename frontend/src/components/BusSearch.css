@@ -1,4 +1,4 @@
-/* Global styles */
+/* Global Reset */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -9,7 +9,7 @@
 .search-container {
     width: 90%;
     max-width: 900px;
-    min-height: 400px; /* Increase this value as needed */
+    min-height: 400px;
     margin: 10px auto;
     padding: 2rem;
     background: rgba(255, 255, 255, 0.95);
@@ -18,7 +18,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center; /* Centers content vertically */
+    justify-content: center;
 }
 
 /* Heading */
@@ -29,17 +29,114 @@ h2 {
     margin-bottom: 1rem;
 }
 
+/* Filter section (Shift & Direction) */
+.filter-section {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: rgba(245, 246, 250, 0.9);
+    border-radius: 10px;
+    width: 100%;
+    justify-content: center;
+}
+
+/* Individual filter group */
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Custom Dropdown */
+.custom-dropdown {
+    position: relative;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1rem;
+    font-size: 1.1rem;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.custom-dropdown:hover {
+    border-color: #646cff;
+}
+
+/* Dropdown options */
+.dropdown-options {
+    position: absolute;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    list-style: none;
+    width: 100%;
+    left: 0;
+    margin-top: 5px;
+    display: none;
+    z-index: 10;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-options.show {
+    display: block;
+}
+
+.dropdown-options li {
+    padding: 10px;
+    cursor: pointer;
+    text-align: center;
+    color: black;
+    background: white;
+}
+
+.dropdown-options li:hover {
+    background: #646cff;
+    color: white;
+}
+
+/* Radio Buttons */
+.radio-group {
+    margin-top: 15px;
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    color: #2c3e50;
+    cursor: pointer;
+}
+
+/* Style radio buttons */
+.radio-group input[type="radio"] {
+    width: 1.5rem; /* Increased size */
+    height: 1.5rem;
+    accent-color: #646cff; /* Blue when selected */
+    background-color: white; /* White default */
+    border: 2px solid #ddd;
+    cursor: pointer;
+}
+
 /* Input container */
 .search-input-container {
     width: 100%;
     position: relative;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
 }
 
+/* Input field */
 .search-input {
     color: black;
     width: 100%;
-    padding: 1rem;
+    padding: 1.2rem;
     font-size: 1rem;
     border: 2px solid #e0e0e0;
     border-radius: 10px;
@@ -62,7 +159,7 @@ h2 {
     width: 100%;
     background: rgba(255, 255, 255, 0.98);
     border-radius: 8px;
-    max-height: 150px;
+    max-height: 200px;
     overflow-y: auto;
     list-style: none;
     padding: 0.5rem;
@@ -72,15 +169,16 @@ h2 {
     border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-/* Suggestion items */
+/* Autocomplete dropdown items */
 .suggestion-item {
     padding: 0.8rem;
     cursor: pointer;
     border-radius: 6px;
     transition: all 0.2s ease;
-    color: #2c3e50;
     font-weight: 500;
-    font-size: 0.9rem;
+    font-size: 1rem;
+    color: black;
+    background: white;
 }
 
 .suggestion-item:hover {
@@ -92,7 +190,7 @@ h2 {
 .search-button {
     width: 100%;
     padding: 1rem;
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-weight: 600;
     background: #646cff;
     color: white;
@@ -115,23 +213,22 @@ h2 {
 /* Search results */
 .search-results {
     width: 95%;
-    min-height: 150px; 
+    min-height: 150px;
     margin-top: 2rem;
     background: rgba(255, 255, 255, 0.95);
     border-radius: 12px;
     padding: 1.3rem;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
     border: 1px solid rgba(0, 0, 0, 0.1);
-    overflow-y: auto; 
+    overflow-y: auto;
 }
-
 
 /* Individual result item */
 .result-item {
     padding: 0.8rem;
     border-bottom: 1px solid #e0e0e0;
     transition: all 0.3s ease;
-    font-size: 0.95rem;
+    font-size: 1rem;
 }
 
 .result-item:last-child {
@@ -145,6 +242,23 @@ h2 {
 .result-item h3 {
     font-size: 1.2rem;
     color: #2c3e50;
+}
+
+/* Contact information */
+.contact-info {
+    margin-top: 0.5rem;
+    font-size: 1rem;
+    color: #2c3e50;
+}
+
+.contact-info a {
+    text-decoration: none;
+    color: #646cff;
+    font-weight: 600;
+}
+
+.contact-info a:hover {
+    text-decoration: underline;
 }
 
 /* No results message */
@@ -162,22 +276,20 @@ h2 {
         padding: 1rem;
     }
 
-    h2 {
-        font-size: 1.3rem;
+    .filter-section {
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
     }
 
     .search-input {
-        padding: 0.9rem;
-        font-size: 0.95rem;
-    }
-
-    .suggestion-item {
-        font-size: 0.85rem;
+        padding: 1.1rem;
+        font-size: 1rem;
     }
 
     .search-button {
-        font-size: 0.95rem;
-        padding: 0.9rem;
+        font-size: 1rem;
+        padding: 1rem;
     }
 
     .result-item h3 {
@@ -191,25 +303,8 @@ h2 {
         padding: 0.8rem;
     }
 
-    h2 {
-        font-size: 1.2rem;
-    }
-
     .search-input {
-        font-size: 0.9rem;
-        padding: 0.8rem;
-    }
-
-    .suggestion-item {
-        font-size: 0.8rem;
-    }
-
-    .search-button {
-        font-size: 0.9rem;
-        padding: 0.8rem;
-    }
-
-    .result-item h3 {
         font-size: 1rem;
+        padding: 1rem;
     }
 }

@@ -10,6 +10,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const MONGO_URI = "mongodb://localhost:27017/";
+const DATABASE_NAME = "BusFinder";
 const UPLOADS_DIR = path.join(__dirname, "uploads");
 
 // Ensure uploads directory exists
@@ -17,7 +19,7 @@ if (!fs.existsSync(UPLOADS_DIR)) {
     fs.mkdirSync(UPLOADS_DIR);
 }
 
-// Configure Multer to handle file uploads
+// Configure Multer for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, UPLOADS_DIR);
@@ -26,42 +28,23 @@ const storage = multer.diskStorage({
         cb(null, `${Date.now()}-${file.originalname}`);
     },
 });
-const upload = multer({ storage });
 
-// API to handle file upload and process with Python script
-app.post("/upload", upload.single("excelFile"), (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ success: false, message: "No file uploaded." });
-    }
-
-    const filePath = path.join(UPLOADS_DIR, req.file.filename);
-    console.log(`📂 File uploaded: ${filePath}`);
-
-    // Run the Python script with the uploaded file
-    const scriptPath = path.join(__dirname, "scripts", "process_pdf.py");
-    exec(`set PYTHONIOENCODING=utf-8 && python "${scriptPath}" "${filePath}"`, (error, stdout, stderr) => {
-
-        // Delete the file after processing
-        fs.unlink(filePath, (err) => {
-            if (err) console.error("⚠️ Error deleting file:", err);
-            else console.log("✅ File deleted after processing.");
-        });
-
-        if (error) {
-            console.error("❌ Python Script Error:", stderr);
-            return res.status(500).json({ success: false, message: "Error processing file.", error: stderr });
+const upload = multer({
+    storage,
+    fileFilter: (req, file, cb) => {
+        if (path.extname(file.originalname) !== ".xlsx") {
+            return cb(new Error("Only .xlsx files are allowed"));
         }
+        cb(null, true);
+    }
+}).fields([
+    { name: "firstShift", maxCount: 1 },
+    { name: "adminIncoming", maxCount: 1 },
+    { name: "adminOutgoing", maxCount: 1 },
+    { name: "generalIncoming", maxCount: 1 }
+]);
 
-        console.log("✅ Python Script Output:", stdout);
-        return res.json({ success: true, message: "File processed successfully.", output: stdout });
-    });
-});
-
-const MONGO_URI = "mongodb://localhost:27017/";
-const DATABASE_NAME = "BusFinder";
-const COLLECTION_NAME = "bus_routes";
-
-// Connect to MongoDB
+// MongoDB Connection
 let db;
 MongoClient.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(client => {
@@ -70,21 +53,113 @@ MongoClient.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true
     })
     .catch(error => console.error("❌ MongoDB Connection Error:", error));
 
-// API to get buses by stop name (Case Insensitive)
-app.get("/buses/:stopName", async (req, res) => {
-    const stopName = req.params.stopName.toLowerCase(); // Convert input to lowercase
+// Helper function to map uploaded file fields to MongoDB collections
+const mapFieldToCollection = (field) => {
+    const collectionMap = {
+        firstShift: "firstshift",
+        adminIncoming: "admin_incoming",
+        adminOutgoing: "admin_outgoing",
+        generalIncoming: "general_incoming"
+    };
+    return collectionMap[field] || null;
+};
 
-    console.log(`🔍 Received request for stop: "${stopName}"`);
+// Process uploaded Excel file and update MongoDB
+const processFile = (file, collectionName) => {
+    return new Promise((resolve, reject) => {
+        const filePath = path.join(UPLOADS_DIR, file.filename);
+        const scriptPath = path.join(__dirname, "scripts", "process_pdf.py");
 
+        exec(`python "${scriptPath}" "${filePath}" "${collectionName}"`, 
+            { encoding: "utf-8" },
+            (error, stdout, stderr) => {
+                // Delete the uploaded file after processing
+                fs.unlink(filePath, (err) => {
+                    if (err) console.error("⚠️ Error deleting file:", err);
+                });
+
+                if (error) {
+                    console.error(`❌ Error processing ${collectionName}:`, stderr);
+                    reject(new Error(`Failed to process ${collectionName} file`));
+                } else {
+                    console.log(`✅ ${collectionName} processed successfully`);
+                    resolve({ collection: collectionName, status: "success" });
+                }
+            }
+        );
+    });
+};
+
+// File Upload API
+app.post("/upload", (req, res) => {
+    upload(req, res, async (err) => {
+        if (err) {
+            console.error("❌ Upload error:", err);
+            return res.status(400).json({ success: false, message: err.message });
+        }
+
+        try {
+            const processingResults = [];
+
+            // Process each uploaded file
+            for (const [field, uploadedFile] of Object.entries(req.files)) {
+                const file = uploadedFile[0];
+                const collectionName = mapFieldToCollection(field);
+                if (collectionName) {
+                    const result = await processFile(file, collectionName);
+                    processingResults.push(result);
+                }
+            }
+
+            res.json({
+                success: true,
+                message: "All files processed successfully",
+                results: processingResults
+            });
+        } catch (error) {
+            console.error("❌ Processing error:", error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    });
+});
+
+// API to get unique stops from the selected collection
+app.get("/stops", async (req, res) => {
     try {
-        const collection = db.collection(COLLECTION_NAME);
-        console.log(`🔎 Running MongoDB query: { "Stops": "${stopName}" }`);
+        const collectionName = req.query.collection;
+        if (!collectionName) {
+            return res.status(400).json({ error: "Collection parameter is required" });
+        }
 
-        const buses = await collection.find(
-            { Stops: stopName } // Exact match search
-        ).toArray();
+        const collection = db.collection(collectionName);
 
-        console.log("✅ MongoDB Query Result:", buses);
+        const stops = await collection.aggregate([
+            { $unwind: "$Stops" },
+            { $group: { _id: "$Stops" } },
+            { $sort: { _id: 1 } }
+        ]).toArray();
+
+        res.json({ stops: stops.map(s => s._id) });
+    } catch (error) {
+        console.error("❌ Error fetching stops:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+// API to get buses from the selected collection for a given stop
+app.get("/buses/:stopName", async (req, res) => {
+    try {
+        const stopName = req.params.stopName.toLowerCase();
+        const collectionName = req.query.collection;
+
+        if (!collectionName) {
+            return res.status(400).json({ error: "Collection parameter is required" });
+        }
+
+        const collection = db.collection(collectionName);
+        console.log(`🔎 Searching for buses at stop: "${stopName}" in collection: ${collectionName}`);
+
+        const buses = await collection.find({ Stops: stopName }).toArray();
 
         if (buses.length > 0) {
             res.json({ buses: buses.map(bus => bus["Bus Code"]) });
@@ -92,26 +167,7 @@ app.get("/buses/:stopName", async (req, res) => {
             res.json({ message: "No buses found for this stop." });
         }
     } catch (error) {
-        console.error("❌ MongoDB Query Error:", error);
-        res.status(500).json({ error: "Internal Server Error" });
-    }
-});
-
-app.get("/stops", async (req, res) => {
-    try {
-        const collection = db.collection(COLLECTION_NAME);
-
-        // Aggregate all stops and return unique values
-        const stops = await collection.aggregate([
-            { $unwind: "$Stops" }, // Flatten stops array
-            { $group: { _id: "$Stops" } }, // Get unique stops
-            { $sort: { _id: 1 } } // Sort alphabetically
-        ]).toArray();
-
-        // Send the unique stops list
-        res.json({ stops: stops.map(s => s._id) });
-    } catch (error) {
-        console.error("❌ Error fetching stops:", error);
+        console.error("❌ Error fetching buses:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });

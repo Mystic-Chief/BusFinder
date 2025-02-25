@@ -2,46 +2,56 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import "../components/AdminUpload.css"
+import "../components/AdminUpload.css";
 
 const AdminUpload = () => {
-    const [file, setFile] = useState(null);
+    const [files, setFiles] = useState({
+        firstShift: null,
+        adminIncoming: null,
+        adminOutgoing: null,
+        generalIncoming: null
+    });
     const [uploading, setUploading] = useState(false);
     const [progress, setProgress] = useState(0);
 
-    const handleFileChange = (e) => {
+    const handleFileChange = (category) => (e) => {
         const selectedFile = e.target.files[0];
         if (selectedFile && selectedFile.name.endsWith('.xlsx')) {
-            setFile(selectedFile);
+            setFiles(prev => ({ ...prev, [category]: selectedFile }));
         } else {
             toast.error('Please select a valid Excel file (.xlsx)');
         }
     };
 
     const handleUpload = async () => {
-        if (!file) {
-            toast.error('Please select a file first!');
+        const selectedFiles = Object.values(files).filter(Boolean);
+        if (selectedFiles.length === 0) {
+            toast.error('Please select at least one file to upload!');
             return;
         }
 
         const formData = new FormData();
-        formData.append('excelFile', file);
+        Object.entries(files).forEach(([category, file]) => {
+            if (file) formData.append(category, file);
+        });
 
         try {
             setUploading(true);
-            const response = await axios.post('http://localhost:5000/upload', formData, {
+            await axios.post('http://localhost:5000/upload', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
                 onUploadProgress: (progressEvent) => {
                     setProgress(Math.round((progressEvent.loaded * 100) / progressEvent.total));
                 },
             });
-
-            if (response.data.success) {
-                toast.success('File processed successfully!');
-                setFile(null);
-            }
+            toast.success('All files processed successfully!');
+            setFiles({
+                firstShift: null,
+                adminIncoming: null,
+                adminOutgoing: null,
+                generalIncoming: null
+            });
         } catch (error) {
-            toast.error('Error processing file. Check console for details.');
+            toast.error('Error processing files. Check console for details.');
         } finally {
             setUploading(false);
             setProgress(0);
@@ -50,33 +60,82 @@ const AdminUpload = () => {
 
     return (
         <div className="admin-upload-container">
-      <h2>Admin Excel Upload</h2>
-      
-      <div className="file-upload-container">
-       
-        <input
-          type="file"
-          id="fileInput"
-          className="hidden-file-input"
-          accept=".xlsx"
-          onChange={handleFileChange}
-          disabled={uploading}
-        />
+            <h2>Admin Shift Data Upload</h2>
+            
+            <div className="upload-sections">
+                {/* First Shift Section */}
+                <div className="upload-section">
+                    <h3>First Shift</h3>
+                    <FileUpload 
+                        id="firstShift"
+                        onChange={handleFileChange('firstShift')}
+                        file={files.firstShift}
+                        disabled={uploading}
+                    />
+                </div>
 
-        <label htmlFor="fileInput" className="custom-file-label">
-          Choose File
-        </label>
-  
-        {file && <div className="file-name">{file.name}</div>}
-      </div>
+                {/* ADM/Medical Shift Section */}
+                <div className="upload-section">
+                    <h3>ADM/Medical Shift</h3>
+                    <div className="sub-sections">
+                        <FileUpload 
+                            id="adminIncoming"
+                            label="Incoming"
+                            onChange={handleFileChange('adminIncoming')}
+                            file={files.adminIncoming}
+                            disabled={uploading}
+                        />
+                        <FileUpload 
+                            id="adminOutgoing"
+                            label="Outgoing"
+                            onChange={handleFileChange('adminOutgoing')}
+                            file={files.adminOutgoing}
+                            disabled={uploading}
+                        />
+                    </div>
+                </div>
 
-      <button onClick={handleUpload} disabled={!file || uploading}>
-        {uploading ? `Processing... ${progress}%` : "Upload & Process"}
-      </button>
+                {/* General Shift Section */}
+                <div className="upload-section">
+                    <h3>General Shift</h3>
+                    <FileUpload 
+                        id="generalIncoming"
+                        label="Incoming"
+                        onChange={handleFileChange('generalIncoming')}
+                        file={files.generalIncoming}
+                        disabled={uploading}
+                    />
+                </div>
+            </div>
 
-      <ToastContainer />
-    </div>
+            <button 
+                onClick={handleUpload} 
+                disabled={uploading || !Object.values(files).some(Boolean)}
+                className="process-button"
+            >
+                {uploading ? `Processing... ${progress}%` : "Process All Files"}
+            </button>
+
+            <ToastContainer />
+        </div>
     );
 };
+
+const FileUpload = ({ id, label, file, onChange, disabled }) => (
+    <div className="file-upload-group">
+        {label && <label className="file-label">{label}</label>}
+        <input
+            type="file"
+            id={id}
+            className="hidden-file-input"
+            accept=".xlsx"
+            onChange={onChange}
+            disabled={disabled}
+        />
+        <label htmlFor={id} className="custom-file-label">
+            {file ? file.name : "Choose File"}
+        </label>
+    </div>
+);
 
 export default AdminUpload;
