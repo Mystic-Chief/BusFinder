@@ -139,6 +139,7 @@ app.get("/stops", async (req, res) => {
             { $sort: { _id: 1 } }
         ]).toArray();
 
+        console.log(`🔍 Fetched ${stops.length} stops from collection: ${collectionName}`);
         res.json({ stops: stops.map(s => s._id) });
     } catch (error) {
         console.error("❌ Error fetching stops:", error);
@@ -157,20 +158,125 @@ app.get("/buses/:stopName", async (req, res) => {
         }
 
         const collection = db.collection(collectionName);
-        console.log(`🔎 Searching for buses at stop: "${stopName}" in collection: ${collectionName}`);
+        const tempCollection = db.collection("temp_changes");
 
-        const buses = await collection.find({ Stops: stopName }).toArray();
+        console.log(`🔍 Searching for buses at stop: "${stopName}" in collection: ${collectionName}`);
 
-        if (buses.length > 0) {
-            res.json({ buses: buses.map(bus => bus["Bus Code"]) });
-        } else {
-            res.json({ message: "No buses found for this stop." });
-        }
+        // 1. Fetch original buses with this stop
+        const originalBuses = await collection.find({ Stops: stopName }).toArray();
+        console.log(`🔍 Found ${originalBuses.length} original buses for stop: "${stopName}"`);
+
+        // 2. Fetch active temporary changes for these buses
+        const activeChanges = await tempCollection.find({
+            $or: [
+                { 
+                    type: "bulk",
+                    busId: { $in: originalBuses.map(b => b._id.toString()) },
+                    originalCollection: collectionName,
+                    expiresAt: { $gt: new Date() }
+                },
+                {
+                    type: "partial",
+                    stops: stopName,
+                    originalCollection: collectionName,
+                    expiresAt: { $gt: new Date() }
+                }
+            ]
+        }).toArray();
+
+        console.log(`🔍 Found ${activeChanges.length} active temporary changes for stop: "${stopName}"`);
+
+        // 3. Create merged results
+        const results = originalBuses.map(bus => {
+            // Find applicable changes (prioritize bulk changes)
+            const bulkChange = activeChanges.find(c => 
+                c.type === "bulk" && c.busId === bus._id.toString()
+            );
+            
+            const partialChanges = activeChanges.filter(c => 
+                c.type === "partial" && 
+                c.busId === bus._id.toString() &&
+                c.stops.includes(stopName)
+            );
+
+            // Use most recent change
+            const changes = [bulkChange, ...partialChanges].filter(Boolean)
+                .sort((a, b) => b.expiresAt - a.expiresAt);
+
+            const finalBusNumber = changes.length > 0 ? changes[0].newBusNumber : bus["Bus Code"];
+            console.log(`🔍 Bus ${bus["Bus Code"]} -> ${finalBusNumber} (${changes.length} changes applied)`);
+
+            return finalBusNumber;
+        });
+
+        console.log(`✅ Returning ${results.length} buses for stop: "${stopName}"`);
+        res.json({ buses: results });
     } catch (error) {
         console.error("❌ Error fetching buses:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
+
+// Temporary changes endpoints
+app.get("/editable-data", async (req, res) => {
+    try {
+        const collectionName = req.query.collection;
+        if (!collectionName) {
+            return res.status(400).json({ error: "Collection parameter is required" });
+        }
+
+        const collection = db.collection(collectionName);
+        const buses = await collection.find().toArray();
+
+        console.log(`🔍 Fetched ${buses.length} buses for editing from collection: ${collectionName}`);
+        res.json({ buses });
+    } catch (error) {
+        console.error("❌ Error fetching editable data:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+app.post("/temp-edit", async (req, res) => {
+    try {
+        const tempCollection = db.collection("temp_changes");
+
+        // Upsert to ensure only one active change per bus
+        await tempCollection.updateOne(
+            {
+                busId: req.body.busId,
+                originalCollection: req.body.collection
+            },
+            {
+                $set: {
+                    newBusNumber: req.body.newBusNumber,
+                    stops: req.body.stops || [],
+                    type: req.body.type,
+                    expiresAt: new Date(Date.now() + 7200000) // 2 hours
+                }
+            },
+            { upsert: true }
+        );
+
+        console.log(`✅ Saved temporary change for bus: ${req.body.busId}, type: ${req.body.type}`);
+        res.json({ success: true });
+    } catch (error) {
+        console.error("❌ Error saving temporary edit:", error);
+        res.status(500).json({ error: "Failed to save temporary edit" });
+    }
+});
+
+// Cleanup expired temporary changes every 5 minutes
+setInterval(async () => {
+    try {
+        const tempCollection = db.collection("temp_changes");
+        const result = await tempCollection.deleteMany({ 
+            expiresAt: { $lt: new Date() } 
+        });
+        console.log(`🧹 Cleaned up ${result.deletedCount} expired temporary changes`);
+    } catch (error) {
+        console.error("❌ Error cleaning temp changes:", error);
+    }
+}, 300000);
 
 // Start server
 const PORT = 5000;

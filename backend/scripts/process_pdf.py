@@ -14,9 +14,9 @@ db = client[DATABASE_NAME]
 collection = db[COLLECTION_NAME]
 
 # Delete all existing data before inserting new data
-print("❌ Deleting existing bus routes...")
+print("Deleting existing bus routes...")
 collection.delete_many({})  # Removes all existing bus routes
-print("✅ All bus routes deleted. Ready to insert new data.")
+print("All bus routes deleted. Ready to insert new data.")
 
 # Define the data directory path
 DATA_DIR = os.path.join(os.getcwd(), "backend", "data")
@@ -25,10 +25,10 @@ DATA_DIR = os.path.join(os.getcwd(), "backend", "data")
 xlsx_files = glob.glob(os.path.join(DATA_DIR, "*.xlsx"))
 
 if not xlsx_files:
-    print("⚠️ No Excel files found in the data directory.")
+    print("No Excel files found in the data directory.")
 else:
     for file_path in xlsx_files:
-        print(f"\n📂 Processing file: {file_path}")
+        print(f"\nProcessing file: {file_path}")
 
         # Load the Excel file
         xls = pd.ExcelFile(file_path)
@@ -68,8 +68,8 @@ else:
         # Insert new data into MongoDB
         if bus_routes:
             collection.insert_many(bus_routes, ordered=False)
-            print(f"✅ Inserted {len(bus_routes)} bus routes into MongoDB.")
+            print(f"Inserted {len(bus_routes)} bus routes into MongoDB.")
 
 # Close MongoDB connection
 client.close()
-print("✅ MongoDB connection closed.")
+print("MongoDB connection closed.")

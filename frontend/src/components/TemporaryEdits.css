@@ -1,0 +1,154 @@
+/* General Container Styling */
+.temp-edit-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+    background: #f9f9f9;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Shift & Direction Selector */
+.selector-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.shift-select {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.direction-radio {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+}
+
+.direction-radio label {
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+/* Bus Card Styling */
+.bus-card {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.bus-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.bus-header h3 {
+    font-size: 1.2rem;
+    color: #333;
+    font-weight: 600;
+}
+
+/* Input and Button Styling */
+.bus-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.bus-actions input {
+    padding: 0.6rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+    width: 140px;
+}
+
+button {
+    padding: 0.6rem 1.2rem;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+button:hover {
+    background: #0056b3;
+}
+
+button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* Stops List Styling */
+.stops-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.stop-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.stop-item:hover {
+    background: #e0e0e0;
+}
+
+.partial-save {
+    margin-top: 1rem;
+    width: 100%;
+    padding: 0.75rem;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.partial-save:hover {
+    background: #218838;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    .bus-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .bus-actions {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .bus-actions input {
+        width: 100%;
+    }
+    .direction-radio {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
