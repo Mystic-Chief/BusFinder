@@ -147,7 +147,6 @@ app.get("/stops", async (req, res) => {
     }
 });
 
-// API to get buses from the selected collection for a given stop
 app.get("/buses/:stopName", async (req, res) => {
     try {
         const stopName = req.params.stopName.toLowerCase();
@@ -204,9 +203,20 @@ app.get("/buses/:stopName", async (req, res) => {
                 .sort((a, b) => b.expiresAt - a.expiresAt);
 
             const finalBusNumber = changes.length > 0 ? changes[0].newBusNumber : bus["Bus Code"];
-            console.log(`🔍 Bus ${bus["Bus Code"]} -> ${finalBusNumber} (${changes.length} changes applied)`);
+            const expiresAt = changes.length > 0 ? changes[0].expiresAt : null;
 
-            return finalBusNumber;
+            // Format the result
+            const result = {
+                originalBusNumber: bus["Bus Code"],
+                newBusNumber: finalBusNumber,
+                expiresAt: expiresAt ? expiresAt.toISOString() : null,
+                message: changes.length > 0
+                    ? `Bus: ${finalBusNumber} instead of ${bus["Bus Code"]} for ${expiresAt.toLocaleDateString()}`
+                    : `Bus: ${bus["Bus Code"]}`
+            };
+
+            console.log(`🔍 Bus ${bus["Bus Code"]} -> ${finalBusNumber} (${changes.length} changes applied)`);
+            return result;
         });
 
         console.log(`✅ Returning ${results.length} buses for stop: "${stopName}"`);
@@ -226,34 +236,62 @@ app.get("/editable-data", async (req, res) => {
         }
 
         const collection = db.collection(collectionName);
-        const buses = await collection.find().toArray();
+        const tempCollection = db.collection("temp_changes");
 
-        console.log(`🔍 Fetched ${buses.length} buses for editing from collection: ${collectionName}`);
-        res.json({ buses });
+        // Get original buses and active changes
+        const [originalBuses, activeChanges] = await Promise.all([
+            collection.find().toArray(),
+            tempCollection.find({ 
+                originalCollection: collectionName,
+                expiresAt: { $gt: new Date() }
+            }).toArray()
+        ]);
+
+        // Merge changes
+        const mergedBuses = originalBuses.map(bus => {
+            const change = activeChanges.find(c => c.busId === bus._id.toString());
+            if (!change) return bus;
+
+            return {
+                ...bus,
+                'Bus Code': change.newBusNumber,
+                Stops: change.type === 'bulk' ? 
+                    bus.Stops :
+                    bus.Stops.map(stop => 
+                        change.stops.includes(stop) ? 
+                        `${change.newBusNumber}|${stop}` : stop
+                    )
+            };
+        });
+
+        res.json({ buses: mergedBuses });
     } catch (error) {
-        console.error("❌ Error fetching editable data:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
-app.post("/temp-edit", async (req, res) => {
+app.post('/temp-edit', async (req, res) => {
     try {
-        const tempCollection = db.collection("temp_changes");
+        const tempCollection = db.collection('temp_changes');
+        const busesCollection = db.collection(req.body.collection);
 
-        // Upsert to ensure only one active change per bus
+        // Prepare update data
+        const updateData = {
+            busId: req.body.busId,
+            newBusNumber: req.body.newBusNumber,
+            type: req.body.type,
+            originalCollection: req.body.collection,
+            expiresAt: new Date(Date.now() + 7200000) // 2 hours
+        };
+
+        if (req.body.type === 'partial') {
+            updateData.stops = req.body.stops;
+        }
+
+        // Upsert the temporary change
         await tempCollection.updateOne(
-            {
-                busId: req.body.busId,
-                originalCollection: req.body.collection
-            },
-            {
-                $set: {
-                    newBusNumber: req.body.newBusNumber,
-                    stops: req.body.stops || [],
-                    type: req.body.type,
-                    expiresAt: new Date(Date.now() + 7200000) // 2 hours
-                }
-            },
+            { busId: req.body.busId },
+            { $set: updateData },
             { upsert: true }
         );
 
@@ -261,7 +299,7 @@ app.post("/temp-edit", async (req, res) => {
         res.json({ success: true });
     } catch (error) {
         console.error("❌ Error saving temporary edit:", error);
-        res.status(500).json({ error: "Failed to save temporary edit" });
+        res.status(500).json({ error: 'Failed to save temporary edit' });
     }
 });
 

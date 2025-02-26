@@ -133,11 +133,16 @@ const BusSearch = () => {
             <div className="search-results">
                 {buses.length > 0 ? (
                     buses.map((bus, index) => {
-                        const busType = bus.split(" - ")[0];
+                        // Extract bus type from the original bus number
+                        const busType = bus.originalBusNumber.split(" - ")[0];
                         const contacts = contactDetails[busType] || [];
+
                         return (
                             <div key={index} className="result-item">
-                                <h3>🚌 Bus: {bus}</h3>
+                                {/* Display the formatted message */}
+                                <h3>🚌 {bus.message}</h3>
+
+                                {/* Display contact information if available */}
                                 {contacts.length > 0 && (
                                     <div className="contact-info">
                                         <h4>📞 Contact:</h4>
