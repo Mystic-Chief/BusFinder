@@ -54,3 +54,29 @@ input:focus {
   background: #ffebee;
   color: #c62828;
 }
+
+.app-container {
+  animation: fadeIn 0.5s ease-out;
+  padding: 1rem; /* Reduce padding to minimize space */
+}
+
+h1 {
+  font-size: 3.5rem;
+  line-height: 1.2;
+  margin-bottom: 1rem; /* Reduce margin-bottom to minimize space */
+  color: #2c3e50;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  padding: 1.5rem; /* Reduce padding to minimize space */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  margin: 1rem auto; /* Reduce margin to minimize space */
+  max-width: 800px;
+}
