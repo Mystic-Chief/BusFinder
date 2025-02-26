@@ -70,7 +70,7 @@ const processFile = (file, collectionName) => {
         const filePath = path.join(UPLOADS_DIR, file.filename);
         const scriptPath = path.join(__dirname, "scripts", "process_pdf.py");
 
-        exec(`python "${scriptPath}" "${filePath}" "${collectionName}"`, 
+        exec(`python "${scriptPath}" "${filePath}" "${collectionName}"`,
             { encoding: "utf-8" },
             (error, stdout, stderr) => {
                 // Delete the uploaded file after processing
@@ -168,7 +168,7 @@ app.get("/buses/:stopName", async (req, res) => {
         // 2. Fetch active temporary changes for these buses
         const activeChanges = await tempCollection.find({
             $or: [
-                { 
+                {
                     type: "bulk",
                     busId: { $in: originalBuses.map(b => b._id.toString()) },
                     originalCollection: collectionName,
@@ -188,12 +188,12 @@ app.get("/buses/:stopName", async (req, res) => {
         // 3. Create merged results
         const results = originalBuses.map(bus => {
             // Find applicable changes (prioritize bulk changes)
-            const bulkChange = activeChanges.find(c => 
+            const bulkChange = activeChanges.find(c =>
                 c.type === "bulk" && c.busId === bus._id.toString()
             );
-            
-            const partialChanges = activeChanges.filter(c => 
-                c.type === "partial" && 
+
+            const partialChanges = activeChanges.filter(c =>
+                c.type === "partial" &&
                 c.busId === bus._id.toString() &&
                 c.stops.includes(stopName)
             );
@@ -227,19 +227,14 @@ app.get("/buses/:stopName", async (req, res) => {
     }
 });
 
-// Temporary changes endpoints
 app.get("/editable-data", async (req, res) => {
     try {
         const collectionName = req.query.collection;
-        if (!collectionName) {
-            return res.status(400).json({ error: "Collection parameter is required" });
-        }
-
         const collection = db.collection(collectionName);
         const tempCollection = db.collection("temp_changes");
 
-        // Get original buses and active changes
-        const [originalBuses, activeChanges] = await Promise.all([
+        // 1. Get original buses and temporary changes
+        const [originalBuses, tempChanges] = await Promise.all([
             collection.find().toArray(),
             tempCollection.find({ 
                 originalCollection: collectionName,
@@ -247,24 +242,52 @@ app.get("/editable-data", async (req, res) => {
             }).toArray()
         ]);
 
-        // Merge changes
-        const mergedBuses = originalBuses.map(bus => {
-            const change = activeChanges.find(c => c.busId === bus._id.toString());
-            if (!change) return bus;
+        // 2. Create a working copy of original buses
+        const modifiedBuses = originalBuses.map(bus => ({
+            ...bus,
+            isTemporary: false // Flag for frontend
+        }));
 
-            return {
-                ...bus,
-                'Bus Code': change.newBusNumber,
-                Stops: change.type === 'bulk' ? 
-                    bus.Stops :
-                    bus.Stops.map(stop => 
-                        change.stops.includes(stop) ? 
-                        `${change.newBusNumber}|${stop}` : stop
-                    )
-            };
+        // 3. Process temporary changes
+        tempChanges.forEach(change => {
+            const originalBus = modifiedBuses.find(b => b._id.toString() === change.busId);
+            
+            if (!originalBus) return;
+
+            if (change.type === 'partial') {
+                // Remove stops from original bus
+                originalBus.Stops = originalBus.Stops.filter(stop => !change.stops.includes(stop));
+                
+                // Add to new bus (create if doesn't exist)
+                let newBus = modifiedBuses.find(b => b['Bus Code'] === change.newBusNumber);
+                if (!newBus) {
+                    newBus = {
+                        _id: `temp_${change.newBusNumber}`,
+                        'Bus Code': change.newBusNumber,
+                        Stops: [],
+                        isTemporary: true
+                    };
+                    modifiedBuses.push(newBus);
+                }
+                newBus.Stops.push(...change.stops);
+            }
+            else if (change.type === 'bulk') {
+                // Move all stops to new bus
+                const newBus = {
+                    _id: `temp_${change.newBusNumber}`,
+                    'Bus Code': change.newBusNumber,
+                    Stops: originalBus.Stops,
+                    isTemporary: true
+                };
+                modifiedBuses.push(newBus);
+                
+                // Remove original bus
+                modifiedBuses.splice(modifiedBuses.indexOf(originalBus), 1);
+            }
         });
 
-        res.json({ buses: mergedBuses });
+        // 4. Return final list with temporary markers
+        res.json({ buses: modifiedBuses });
     } catch (error) {
         res.status(500).json({ error: "Internal Server Error" });
     }
@@ -307,8 +330,8 @@ app.post('/temp-edit', async (req, res) => {
 setInterval(async () => {
     try {
         const tempCollection = db.collection("temp_changes");
-        const result = await tempCollection.deleteMany({ 
-            expiresAt: { $lt: new Date() } 
+        const result = await tempCollection.deleteMany({
+            expiresAt: { $lt: new Date() }
         });
         console.log(`🧹 Cleaned up ${result.deletedCount} expired temporary changes`);
     } catch (error) {

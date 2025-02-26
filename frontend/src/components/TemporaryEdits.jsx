@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import "../components/TemporaryEdits.css";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import '../components/TemporaryEdits.css';
 
 const TemporaryEdits = ({ userRole }) => {
-    const [shift, setShift] = useState("");
-    const [direction, setDirection] = useState("");
+    const [shift, setShift] = useState('');
+    const [direction, setDirection] = useState('');
     const [buses, setBuses] = useState([]);
     const [selectedStops, setSelectedStops] = useState({});
     const [newBusNumbers, setNewBusNumbers] = useState({});
     const [refreshKey, setRefreshKey] = useState(0);
-    const [searchType, setSearchType] = useState("busNumber");
-    const [searchTerm, setSearchTerm] = useState("");
+    const [searchType, setSearchType] = useState('busNumber');
+    const [searchTerm, setSearchTerm] = useState('');
 
     const collectionMap = {
-        firstShift: { incoming: "firstshift", outgoing: "firstshift" },
-        adminMedical: { incoming: "admin_incoming", outgoing: "admin_outgoing" },
-        general: { incoming: "general_incoming", outgoing: "admin_outgoing" }
+        firstShift: { incoming: 'firstshift', outgoing: 'firstshift' },
+        adminMedical: { incoming: 'admin_incoming', outgoing: 'admin_outgoing' },
+        general: { incoming: 'general_incoming', outgoing: 'admin_outgoing' }
     };
 
     useEffect(() => {
@@ -27,28 +27,30 @@ const TemporaryEdits = ({ userRole }) => {
             try {
                 const collection = collectionMap[shift][direction];
                 const response = await axios.get(`http://localhost:5000/editable-data?collection=${collection}`);
-                let filteredBuses = response.data.buses;
+                let fetchedBuses = response.data.buses;
 
                 // Role-based filtering
-                if (userRole.includes("supervisor")) {
-                    const busType = userRole.split("-")[0].toUpperCase();
-                    filteredBuses = filteredBuses.filter(bus => bus["Bus Code"].startsWith(busType));
+                if (userRole.includes('supervisor')) {
+                    const busType = userRole.split('-')[0].toUpperCase();
+                    fetchedBuses = fetchedBuses.filter(bus =>
+                        bus['Bus Code'].startsWith(busType)
+                    );
                 }
 
                 // Search filtering
                 if (searchTerm) {
                     const lowerSearch = searchTerm.toLowerCase();
-                    filteredBuses = filteredBuses.filter(bus => {
-                        if (searchType === "busNumber") {
-                            return bus["Bus Code"].toLowerCase().includes(lowerSearch);
+                    fetchedBuses = fetchedBuses.filter(bus => {
+                        if (searchType === 'busNumber') {
+                            return bus['Bus Code'].toLowerCase().includes(lowerSearch);
                         }
                         return bus.Stops.some(stop => stop.toLowerCase().includes(lowerSearch));
                     });
                 }
 
-                setBuses(filteredBuses);
+                setBuses(fetchedBuses);
             } catch (error) {
-                toast.error("Failed to load bus data");
+                toast.error('Failed to load bus data');
             }
         };
 
@@ -67,7 +69,7 @@ const TemporaryEdits = ({ userRole }) => {
     const handleBusNumberChange = (busId, value) => {
         setNewBusNumbers(prev => ({
             ...prev,
-            [busId]: value || ""
+            [busId]: value || ''
         }));
     };
 
@@ -76,16 +78,16 @@ const TemporaryEdits = ({ userRole }) => {
         if (!newNumber) return;
 
         try {
-            await axios.post("http://localhost:5000/temp-edit", {
-                type: "bulk",
+            await axios.post('http://localhost:5000/temp-edit', {
+                type: 'bulk',
                 busId,
                 newBusNumber: newNumber,
                 collection: collectionMap[shift][direction]
             });
-            toast.success("Bulk change saved");
+            toast.success('Bulk change saved');
             setRefreshKey(prev => prev + 1);
         } catch (error) {
-            toast.error("Failed to save bulk change");
+            toast.error('Failed to save bulk change');
         }
     };
 
@@ -95,18 +97,19 @@ const TemporaryEdits = ({ userRole }) => {
 
         try {
             const bus = buses.find(b => b._id === busId);
-            await axios.post("http://localhost:5000/temp-edit", {
-                type: "partial",
+
+            await axios.post('http://localhost:5000/temp-edit', {
+                type: 'partial',
                 busId,
                 newBusNumber: newNumber,
                 stops: bus.Stops.filter((_, i) => selectedStops[busId].includes(i)),
                 collection: collectionMap[shift][direction]
             });
-            toast.success("Partial changes saved");
+            toast.success('Partial changes saved');
             setSelectedStops(prev => ({ ...prev, [busId]: [] }));
             setRefreshKey(prev => prev + 1);
         } catch (error) {
-            toast.error("Failed to save partial changes");
+            toast.error('Failed to save partial changes');
         }
     };
 
@@ -132,8 +135,8 @@ const TemporaryEdits = ({ userRole }) => {
                         <input
                             type="radio"
                             value="incoming"
-                            checked={direction === "incoming"}
-                            onChange={() => setDirection("incoming")}
+                            checked={direction === 'incoming'}
+                            onChange={() => setDirection('incoming')}
                         />
                         Incoming
                     </label>
@@ -141,8 +144,8 @@ const TemporaryEdits = ({ userRole }) => {
                         <input
                             type="radio"
                             value="outgoing"
-                            checked={direction === "outgoing"}
-                            onChange={() => setDirection("outgoing")}
+                            checked={direction === 'outgoing'}
+                            onChange={() => setDirection('outgoing')}
                         />
                         Outgoing
                     </label>
@@ -163,7 +166,7 @@ const TemporaryEdits = ({ userRole }) => {
 
                     <input
                         type="text"
-                        placeholder={`Search ${searchType === "busNumber" ? "bus numbers" : "stops"}...`}
+                        placeholder={`Search ${searchType === 'busNumber' ? 'bus numbers' : 'stops'}...`}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="search-input"
@@ -172,31 +175,37 @@ const TemporaryEdits = ({ userRole }) => {
             )}
 
             {/* Bus List */}
-            {buses.map(bus => {
-                const hasPartial = selectedStops[bus._id]?.length > 0;
-                const hasNewNumber = !!newBusNumbers[bus._id]?.trim();
-
-                return (
-                    <div key={bus._id} className="bus-card">
+            {buses
+                .reduce((merged, bus) => {
+                    const existing = merged.find(b => b['Bus Code'] === bus['Bus Code']);
+                    if (existing) {
+                        // Merge stops and preserve temporary status
+                        existing.Stops = [...new Set([...existing.Stops, ...bus.Stops])];
+                        existing.isTemporary = existing.isTemporary || bus.isTemporary;
+                    } else {
+                        merged.push(bus);
+                    }
+                    return merged;
+                }, [])
+                .map(bus => (
+                    <div key={bus['Bus Code']} className={`bus-card ${bus.isTemporary ? 'temporary' : ''}`}>
                         <div className="bus-header">
-                            <h3>Original Bus: {bus["Bus Code"]}</h3>
+                            <h3>{bus['Bus Code']} {bus.isTemporary && '(Temporary)'}</h3>
                             <div className="bus-actions">
                                 <input
                                     type="text"
                                     placeholder="New Bus #"
-                                    value={newBusNumbers[bus._id] || ""}
+                                    value={newBusNumbers[bus._id] || ''}
                                     onChange={(e) => handleBusNumberChange(bus._id, e.target.value)}
                                 />
                                 <button
                                     onClick={() => handleBulkChange(bus._id)}
-                                    disabled={hasPartial || !hasNewNumber}
+                                    disabled={selectedStops[bus._id]?.length > 0 || !newBusNumbers[bus._id]?.trim()}
                                 >
                                     Change All
                                 </button>
                             </div>
                         </div>
-
-                        {/* Stops List */}
                         <div className="stops-list">
                             {bus.Stops.map((stop, index) => (
                                 <div
@@ -213,21 +222,17 @@ const TemporaryEdits = ({ userRole }) => {
                                 </div>
                             ))}
                         </div>
-
-                        {/* Partial Save Button */}
-                        {hasPartial && (
+                        {selectedStops[bus._id]?.length > 0 && (
                             <button
                                 className="partial-save"
                                 onClick={() => handlePartialChange(bus._id)}
-                                disabled={!hasNewNumber}
-                                style={!hasNewNumber ? { opacity: 0.5 } : {}}
+                                disabled={!newBusNumbers[bus._id]?.trim()}
                             >
                                 Save for {selectedStops[bus._id].length} selected stops
                             </button>
                         )}
                     </div>
-                );
-            })}
+                ))}
 
             <ToastContainer />
         </div>

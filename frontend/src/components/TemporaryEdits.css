@@ -122,6 +122,44 @@ button:disabled {
     background: #45a049;
 }
 
+/* .temporary {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+}
+
+.temporary h3 {
+    color: #856404;
+} */
+
+/* Temporary styling */
+.temporary {
+    border: 2px solid #ffc107;
+    background-color: #fff9e6;
+}
+
+.temp-info {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 4px;
+}
+
+.temp-label {
+    color: #d48806;
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+.original-bus {
+    font-style: italic;
+}
+
+.bus-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
 @media (max-width: 480px) {
     .bus-header {
         flex-direction: column;
