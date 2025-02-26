@@ -207,20 +207,28 @@ const TemporaryEdits = ({ userRole }) => {
                             </div>
                         </div>
                         <div className="stops-list">
-                            {bus.Stops.map((stop, index) => (
-                                <div
-                                    key={index}
-                                    className="stop-item"
-                                    onClick={() => handleStopSelect(bus._id, index)}
-                                >
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedStops[bus._id]?.includes(index)}
-                                        readOnly
-                                    />
-                                    <span>{stop}</span>
-                                </div>
-                            ))}
+                            {bus.Stops.map((stop, index) => {
+                                const isTempStop = bus.partialChanges?.some(pc =>
+                                    pc.stops.includes(stop)
+                                );
+
+                                return (
+                                    <div
+                                        key={`${bus._id}-${index}`}
+                                        className={`stop-item ${isTempStop ? 'temp-stop' : ''}`}
+                                        onClick={() => !isTempStop && handleStopSelect(bus._id, index)}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedStops[bus._id]?.includes(index)}
+                                            readOnly
+                                            disabled={isTempStop}
+                                        />
+                                        <span>{stop}</span>
+                                        {isTempStop && <span className="temp-badge">Temporary</span>}
+                                    </div>
+                                );
+                            })}
                         </div>
                         {selectedStops[bus._id]?.length > 0 && (
                             <button
