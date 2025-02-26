@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { Link } from 'react-router-dom';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "../components/BusSearch.css"
@@ -78,56 +79,64 @@ const BusSearch = () => {
     };
 
     return (
-        <div className="search-container">
-            <h2>🚏 Find Buses by Stop Name</h2>
-            <div className="search-input-container">
-                <input
-                    type="text"
-                    className="search-input"
-                    placeholder="Enter stop name..."
-                    value={stop}
-                    onChange={handleInputChange}
-                    autoComplete="off"
-                />
-                {/* Show suggestions */}
-                {filteredStops.length > 0 && (
-                    <ul className="autocomplete-dropdown">
-                        {filteredStops.map((suggestion, index) => (
-                            <li
-                                key={index}
-                                onClick={() => handleStopSelection(suggestion)}
-                                className="suggestion-item"
-                            >
-                                {suggestion}
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </div>
-
-            <button
-                className="search-button"
-                onClick={searchBuses}
-                disabled={!selectedStop}
-            >
-                Search Buses
-            </button>
-
-            {/* Display search results */}
-            <div className="search-results">
-                {buses.length > 0 ? (
-                    buses.map((bus, index) => (
-                        <div key={index} className="result-item">
-                            <h3>🚌 Bus: {bus}</h3>
-                        </div>
-                    ))
-                ) : (
-                    <p className="no-results">No buses found for this stop.</p>
-                )}
-            </div>
-
-            <ToastContainer />
-        </div>
+    
+            <>
+                {/* Admin Login Button - Positioned at Top Right */}
+                <div className="admin-login-container">
+                    <button className="admin-login-button"><Link to="/login">Admin Login</Link></button>
+                </div>
+        
+                <div className="search-container">
+                    <h2>🚏 Find Buses by Stop Name</h2>
+                    <div className="search-input-container">
+                        <input
+                            type="text"
+                            className="search-input"
+                            placeholder="Enter stop name..."
+                            value={stop}
+                            onChange={handleInputChange}
+                            autoComplete="off"
+                        />
+                        {filteredStops.length > 0 && (
+                            <ul className="autocomplete-dropdown">
+                                {filteredStops.map((suggestion, index) => (
+                                    <li
+                                        key={index}
+                                        onClick={() => handleStopSelection(suggestion)}
+                                        className="suggestion-item"
+                                    >
+                                        {suggestion}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+        
+                    <button
+                        className="search-button"
+                        onClick={searchBuses}
+                        disabled={!selectedStop}
+                    >
+                        Search Buses
+                    </button>
+        
+                    <div className="search-results">
+                        {buses.length > 0 ? (
+                            buses.map((bus, index) => (
+                                <div key={index} className="result-item">
+                                    <h3>🚌 Bus: {bus}</h3>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="no-results">No buses found for this stop.</p>
+                        )}
+                    </div>
+        
+                    <ToastContainer />
+                </div>
+            </>
+    
+        
     );
 };
 
