@@ -131,4 +131,29 @@ const saveTempEdit = async (req, res) => {
     }
 };
 
-module.exports = { getEditableData, saveTempEdit };
+const allBusNumbers = async (req, res) => {
+    try {
+        const collections = [
+            'firstshift_incoming', 'firstshift_outgoing',
+            'admin_incoming', 'admin_outgoing',
+            'general_incoming'
+        ];
+
+        const allNumbers = new Set();
+        
+        for (const collection of collections) {
+            const buses = await mongoose.connection.db.collection(collection)
+                .find({}, { projection: { 'Bus Code': 1 } })
+                .toArray();
+            
+            buses.forEach(bus => allNumbers.add(bus['Bus Code']));
+        }
+
+        res.json(Array.from(allNumbers));
+    } catch (error) {
+        console.error("Error fetching bus numbers:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+};
+
+module.exports = { getEditableData, saveTempEdit , allBusNumbers};
