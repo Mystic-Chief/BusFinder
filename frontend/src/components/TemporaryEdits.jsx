@@ -26,7 +26,7 @@ const TemporaryEdits = ({ userRole }) => {
 
             try {
                 const collection = collectionMap[shift][direction];
-                const response = await axios.get(`http://localhost:5000/editable-data?collection=${collection}`);
+                const response = await axios.get(`http://localhost:5000/api/temp-edit/editable-data?collection=${collection}`);
                 let fetchedBuses = response.data.buses;
 
                 // Role-based filtering
@@ -85,7 +85,7 @@ const TemporaryEdits = ({ userRole }) => {
         if (!newNumber) return;
 
         try {
-            await axios.post('http://localhost:5000/temp-edit', {
+            await axios.post('http://localhost:5000/api/temp-edit/temp-edit', {
                 type: 'bulk',
                 busId,
                 newBusNumber: newNumber,
@@ -107,7 +107,7 @@ const TemporaryEdits = ({ userRole }) => {
         try {
             const bus = buses.find(b => b._id === busId);
 
-            await axios.post('http://localhost:5000/temp-edit', {
+            await axios.post('http://localhost:5000/api/temp-edit/temp-edit', {
                 type: 'partial',
                 busId,
                 newBusNumber: newNumber,
@@ -203,7 +203,6 @@ const TemporaryEdits = ({ userRole }) => {
                 }, [])
                 .filter(bus => bus.Stops.length > 0) // Filter out buses with no stops
                 .map(bus => {
-                    console.log("Bus:", bus['Bus Code'], "Partial Changes:", bus.partialChanges, "Bulk Changes:", bus.bulkChanges);
                     return (
                         <div key={`${bus['Bus Code']}-${bus._id}`} className={`bus-card ${bus.isTemporary ? 'temporary' : ''}`}>
                             <div className="bus-header">
@@ -234,17 +233,14 @@ const TemporaryEdits = ({ userRole }) => {
                                             console.error("Invalid partialChanges.stops:", pc.stops);
                                             return false;
                                         }
-                                        console.log("Checking partial change:", pc.stops, "for stop:", stop);
                                         return pc.stops.includes(stop);
                                     });
 
                                     // Check if the stop is part of a bulk change
                                     const isBulkStop = bus.bulkChanges?.some(bc => {
                                         if (!bc.stops || !Array.isArray(bc.stops)) {
-                                            console.error("Invalid bulkChanges.stops:", bc.stops);
                                             return false;
                                         }
-                                        console.log("Checking bulk change:", bc.stops, "for stop:", stop);
                                         return bc.stops.includes(stop);
                                     });
 

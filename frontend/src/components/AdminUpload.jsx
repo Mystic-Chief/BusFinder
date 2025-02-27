@@ -41,7 +41,7 @@ const AdminUpload = () => {
 
         try {
             setUploading(true);
-            await axios.post('http://localhost:5000/upload', formData, {
+            await axios.post('http://localhost:5000/api/file/upload', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
                 onUploadProgress: (progressEvent) => {
                     setProgress(Math.round((progressEvent.loaded * 100) / progressEvent.total));

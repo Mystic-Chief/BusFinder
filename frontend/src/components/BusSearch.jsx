@@ -39,7 +39,7 @@ const BusSearch = () => {
             if (!selectedShift || !selectedDirection) return;
             try {
                 const collection = collectionMap[selectedShift][selectedDirection];
-                const response = await axios.get(`http://localhost:5000/stops?collection=${collection}`);
+                const response = await axios.get(`http://localhost:5000/api/bus/stops?collection=${collection}`);
                 setStopsList(response.data.stops);
             } catch (error) {
                 console.error("❌ Error fetching stops:", error);
@@ -74,7 +74,7 @@ const BusSearch = () => {
         }
         try {
             const collection = collectionMap[selectedShift][selectedDirection];
-            const response = await axios.get(`http://localhost:5000/buses/${encodeURIComponent(selectedStop)}?collection=${collection}`);
+            const response = await axios.get(`http://localhost:5000/api/bus/buses/${encodeURIComponent(selectedStop)}?collection=${collection}`);
             setBuses(response.data.buses || []);
             setStop("");
             if (response.data.buses && response.data.buses.length === 0) {

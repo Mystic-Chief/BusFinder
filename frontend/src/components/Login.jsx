@@ -1,31 +1,38 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const Login = ({ setLoggedInUser }) => {
     const [role, setRole] = useState('student');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
     const navigate = useNavigate();
 
-    // Hardcoded admin credentials (replace with proper auth in production)
-    const adminCredentials = {
-        'kt-supervisor': { password: 'kt123', role: 'kt-supervisor' },
-        'pt-supervisor': { password: 'pt123', role: 'pt-supervisor' },
-        'admin': { password: 'admin123', role: 'admin' }
-    };
-
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        
+
         if (role === 'admin') {
-            const user = adminCredentials[username];
-            if (user && user.password === password) {
-                setLoggedInUser({ role: user.role });
-                navigate(user.role === 'admin' ? '/admin' : '/temporary-edits');
-            } else {
-                alert('Invalid admin credentials');
+            try {
+                // Call the backend API to validate credentials
+                const response = await axios.post('http://localhost:5000/api/auth/login', {
+                    username,
+                    password
+                });
+
+                if (response.data.success) {
+                    // Set the logged-in user and navigate
+                    setLoggedInUser({ role: response.data.role });
+                    navigate(response.data.role === 'admin' ? '/admin' : '/temporary-edits');
+                } else {
+                    setError('Invalid admin credentials');
+                }
+            } catch (error) {
+                console.error('❌ Error validating credentials:', error);
+                setError('Failed to validate credentials. Please try again.');
             }
         } else {
+            // For student/staff, no credentials are required
             setLoggedInUser({ role });
             navigate('/');
         }
@@ -83,6 +90,8 @@ const Login = ({ setLoggedInUser }) => {
                         />
                     </div>
                 )}
+
+                {error && <p className="error-message">{error}</p>}
 
                 <button type="submit">Login</button>
             </form>
