@@ -73,6 +73,13 @@ const TemporaryEdits = ({ userRole }) => {
         }));
     };
 
+    const resetBusNumberInput = (busId) => {
+        setNewBusNumbers(prev => ({
+            ...prev,
+            [busId]: '' // Reset the input field for this bus
+        }));
+    };
+
     const handleBulkChange = async (busId) => {
         const newNumber = newBusNumbers[busId]?.trim();
         if (!newNumber) return;
@@ -89,6 +96,8 @@ const TemporaryEdits = ({ userRole }) => {
         } catch (error) {
             toast.error('Failed to save bulk change');
         }
+
+        resetBusNumberInput(busId);
     };
 
     const handlePartialChange = async (busId) => {
@@ -111,6 +120,9 @@ const TemporaryEdits = ({ userRole }) => {
         } catch (error) {
             toast.error('Failed to save partial changes');
         }
+
+        resetBusNumberInput(busId);
+
     };
 
     return (
@@ -189,6 +201,7 @@ const TemporaryEdits = ({ userRole }) => {
                     }
                     return merged;
                 }, [])
+                .filter(bus => bus.Stops.length > 0) // Filter out buses with no stops
                 .map(bus => {
                     console.log("Bus:", bus['Bus Code'], "Partial Changes:", bus.partialChanges, "Bulk Changes:", bus.bulkChanges);
                     return (
@@ -196,7 +209,7 @@ const TemporaryEdits = ({ userRole }) => {
                             <div className="bus-header">
                                 <h3>
                                     {bus['Bus Code']}
-                                    {bus.isTemporary && '(Temporary Changes)'}
+                                    {bus.isTemporary && ' (Temporary Changes)'}
                                 </h3>
                                 <div className="bus-actions">
                                     <input
