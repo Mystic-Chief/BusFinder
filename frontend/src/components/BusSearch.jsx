@@ -15,7 +15,7 @@ const BusSearch = () => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
     const collectionMap = {
-        firstShift: { incoming: "firstshift", outgoing: "firstshift" },
+        firstShift: { incoming: "firstshift_incoming", outgoing: "firstshift_outgoing" },
         adminMedical: { incoming: "admin_incoming", outgoing: "admin_outgoing" },
         general: { incoming: "general_incoming", outgoing: "admin_outgoing" }
     };

@@ -31,9 +31,13 @@ const AdminUpload = () => {
         }
 
         const formData = new FormData();
-        Object.entries(files).forEach(([category, file]) => {
-            if (file) formData.append(category, file);
-        });
+        if (files.firstShift) {
+            formData.append('firstShiftIncoming', files.firstShift);
+            formData.append('firstShiftOutgoing', files.firstShift);
+        }
+        if (files.adminIncoming) formData.append('adminIncoming', files.adminIncoming);
+        if (files.adminOutgoing) formData.append('adminOutgoing', files.adminOutgoing);
+        if (files.generalIncoming) formData.append('generalIncoming', files.generalIncoming);
 
         try {
             setUploading(true);

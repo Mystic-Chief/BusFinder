@@ -5,6 +5,7 @@ const multer = require("multer");
 const path = require("path");
 const { exec } = require("child_process");
 const fs = require("fs");
+const { log } = require("console");
 
 const app = express();
 app.use(cors());
@@ -38,7 +39,8 @@ const upload = multer({
         cb(null, true);
     }
 }).fields([
-    { name: "firstShift", maxCount: 1 },
+    { name: "firstShiftIncoming", maxCount: 1 },
+    {name: "firstShiftOutgoing", maxCount: 1},
     { name: "adminIncoming", maxCount: 1 },
     { name: "adminOutgoing", maxCount: 1 },
     { name: "generalIncoming", maxCount: 1 }
@@ -56,7 +58,8 @@ MongoClient.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true
 // Helper function to map uploaded file fields to MongoDB collections
 const mapFieldToCollection = (field) => {
     const collectionMap = {
-        firstShift: "firstshift",
+        firstShiftIncoming: "firstshift_incoming",
+        firstShiftOutgoing: "firstshift_outgoing",
         adminIncoming: "admin_incoming",
         adminOutgoing: "admin_outgoing",
         generalIncoming: "general_incoming"
@@ -83,10 +86,6 @@ const processFile = (file, collectionName) => {
         });
 
         process.on("close", (code) => {
-            fs.unlink(filePath, (err) => {
-                if (err) console.error("⚠️ Error deleting file:", err);
-            });
-
             if (code === 0) {
                 console.log(`✅ Script completed successfully for ${collectionName}`);
                 resolve();
@@ -108,6 +107,7 @@ app.post("/upload", (req, res) => {
 
         try {
             const processingResults = [];
+            const filesToDelete = new Set(); // Use a Set to avoid duplicates
 
             // Process each uploaded file
             for (const [field, uploadedFile] of Object.entries(req.files)) {
@@ -117,7 +117,20 @@ app.post("/upload", (req, res) => {
                 if (collectionName) {
                     await processFile(file, collectionName);
                     processingResults.push({ collection: collectionName, status: "Processed" });
+                    filesToDelete.add(file.filename); // Add file to deletion set
                 }
+            }
+
+            // Delete files after all processing is complete
+            for (const filename of filesToDelete) {
+                const filePath = path.join(UPLOADS_DIR, filename);
+                fs.unlink(filePath, (err) => {
+                    if (err) {
+                        console.error("⚠️ Error deleting file:", err);
+                    } else {
+                        console.log(`✅ Deleted file: ${filename}`);
+                    }
+                });
             }
 
             res.json({
@@ -380,6 +393,35 @@ setInterval(async () => {
         console.error("❌ Error cleaning temp changes:", error);
     }
 }, 300000);
+
+const cleanupOldFiles = () => {
+    const now = Date.now();
+    const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+
+    fs.readdir(UPLOADS_DIR, (err, files) => {
+        if (err) {
+            console.error("⚠️ Error reading uploads directory:", err);
+            return;
+        }
+
+        files.forEach((file) => {
+            const filePath = path.join(UPLOADS_DIR, file);
+            const stats = fs.statSync(filePath);
+            if (now - stats.mtimeMs > maxAge) {
+                fs.unlink(filePath, (err) => {
+                    if (err) {
+                        console.error("⚠️ Error deleting old file:", err);
+                    } else {
+                        console.log(`✅ Deleted old file: ${file}`);
+                    }
+                });
+            }
+        });
+    });
+};
+
+// Run cleanup every hour
+setInterval(cleanupOldFiles, 60 * 60 * 1000);
 
 // Start server
 const PORT = 5000;
