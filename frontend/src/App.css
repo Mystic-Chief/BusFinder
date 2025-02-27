@@ -134,7 +134,13 @@ input:focus {
     text-align: center;
   }
 
-  .card {
-    padding: 1rem;
-  }
+.card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  padding: 1.5rem; /* Reduce padding to minimize space */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  margin: 1rem auto; /* Reduce margin to minimize space */
+  max-width: 800px;
 }

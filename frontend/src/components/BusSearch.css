@@ -269,6 +269,38 @@ h2 {
     padding: 1rem;
 }
 
+/* Admin Login Button - Positioned Top Right */
+.admin-login-container {
+    position: absolute;
+    top: 25px;
+    right: 40px;
+}
+
+.admin-login-button {
+    padding: 0.8rem 1.2rem;
+    font-size: 0.8rem;
+    font-weight: bold;
+    background-color: #ff6b6b;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    /* list-style: none; */
+    text-decoration: none;
+}
+
+.admin-login-button:hover {
+    background-color: #ff4d4d;
+    transform: scale(1.05);
+}
+
+/* Ensure the container has relative positioning so the button remains outside */
+.search-container {
+    position: relative;
+}
+
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .search-container {
@@ -294,6 +326,9 @@ h2 {
 
     .result-item h3 {
         font-size: 1.1rem;
+    }
+    .admin-login-button{
+        display: none;
     }
 }
 
