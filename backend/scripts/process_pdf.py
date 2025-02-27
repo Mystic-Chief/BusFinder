@@ -1,75 +1,117 @@
+import sys
 import pandas as pd
-import glob
 import os
+import re
 from pymongo import MongoClient
 
-# MongoDB Connection
+# Ensure UTF-8 encoding for logs
+sys.stdout.reconfigure(encoding='utf-8')
+
+# MongoDB Configuration
 MONGO_URI = "mongodb://localhost:27017/"
 DATABASE_NAME = "BusFinder"
-COLLECTION_NAME = "bus_routes"
 
-# Connect to MongoDB
-client = MongoClient(MONGO_URI)
-db = client[DATABASE_NAME]
-collection = db[COLLECTION_NAME]
+def connect_to_mongo(collection_name):
+    """Establishes connection to MongoDB and returns collection reference."""
+    client = MongoClient(MONGO_URI)
+    db = client[DATABASE_NAME]
+    return client, db[collection_name]
 
-# Delete all existing data before inserting new data
-print("Deleting existing bus routes...")
-collection.delete_many({})  # Removes all existing bus routes
-print("All bus routes deleted. Ready to insert new data.")
+def validate_arguments():
+    """Validates command line arguments."""
+    if len(sys.argv) < 3:
+        print("❌ Usage: python script.py <file_path> <collection_name>")
+        sys.exit(1)
+    
+    file_path = sys.argv[1]
+    collection_name = sys.argv[2]
+    
+    if not os.path.exists(file_path):
+        print(f"❌ File does not exist: {file_path}")
+        sys.exit(1)
 
-# Define the data directory path
-DATA_DIR = os.path.join(os.getcwd(), "backend", "data")
+    print(f"📂 Processing file: {file_path} for collection: {collection_name}")
+    return file_path, collection_name
 
-# Find all .xlsx files in the data directory
-xlsx_files = glob.glob(os.path.join(DATA_DIR, "*.xlsx"))
+def clean_excel_data(file_path):
+    """Loads and cleans the Excel file."""
+    xls = pd.ExcelFile(file_path)
+    df = pd.read_excel(xls, sheet_name=xls.sheet_names[0], skiprows=1)
+    return df.dropna(axis=1, how='all').dropna(axis=0, how='all').reset_index(drop=True)
 
-if not xlsx_files:
-    print("No Excel files found in the data directory.")
-else:
-    for file_path in xlsx_files:
-        print(f"\nProcessing file: {file_path}")
+def extract_bus_routes(df):
+    """Extracts bus routes with strict regex pattern for PT, KT, and PU."""
+    bus_routes = []
+    
+    for col in df.columns:
+        current_col_index = df.columns.get_loc(col)
+        gujarati_col_index = current_col_index + 1
+        has_gujarati_col = gujarati_col_index < len(df.columns)
 
-        # Load the Excel file
-        xls = pd.ExcelFile(file_path)
-        sheet_names = xls.sheet_names
-        print("📄 Available sheets:", sheet_names)
+        bus_code = None
+        stops = []
 
-        # Read the first sheet
-        df_cleaned = pd.read_excel(xls, sheet_name=sheet_names[0], skiprows=1)
-
-        # Drop empty rows/columns
-        df_cleaned = df_cleaned.dropna(axis=1, how='all')
-        df_cleaned = df_cleaned.dropna(axis=0, how='all')
-        df_cleaned.reset_index(drop=True, inplace=True)
-
-        # Convert stops to lowercase and clean them
-        bus_routes = []
-
-        for col in df_cleaned.columns:
-            bus_code = None
-            stops = []
-
-            for value in df_cleaned[col]:
-                if isinstance(value, str) and ('PT -' in value or 'KT -' in value):
-                    if bus_code and stops:
-                        bus_routes.append({"Bus Code": bus_code, "Stops": [stop.lower().strip() for stop in stops]})
-
-                    bus_code = value
+        for idx, value in enumerate(df[col]):
+            # Strict regex pattern to match only cells starting with PT, KT, or PU
+            if isinstance(value, str) and (match := re.match(
+                r'^(PT|KT)\s*-\s*(\d+)$|^PU\s+(.+)$', 
+                value.strip(), 
+                re.IGNORECASE
+            )):
+                # Determine route type and format accordingly
+                if match.group(1):  # PT/KT route
+                    prefix = match.group(1).upper()
+                    number = match.group(2).strip()
+                    formatted_code = f"{prefix} - {number}"
+                else:  # PU route
+                    pu_text = match.group(3).strip()
+                    formatted_code = f"PU {pu_text}"
+                
+                if bus_code and stops:
+                    bus_routes.append({"Bus Code": bus_code, "Stops": stops})
+                bus_code = formatted_code
+                stops = []
+            elif isinstance(value, (int, float)):
+                if bus_code and stops:
+                    bus_routes.append({"Bus Code": bus_code, "Stops": stops})
+                    bus_code = None
                     stops = []
-                elif isinstance(value, (int, float)):
-                    if bus_code and stops:
-                        bus_routes.append({"Bus Code": bus_code, "Stops": [stop.lower().strip() for stop in stops]})
-                        bus_code = None
-                        stops = []
-                elif bus_code:
-                    stops.append(value)
+            elif bus_code:
+                # Process stop names with Gujarati translations
+                guj_value = ""
+                if has_gujarati_col:
+                    guj_value = df.iloc[idx, gujarati_col_index]
+                    guj_value = "" if pd.isna(guj_value) else str(guj_value).strip().lower()
+                
+                eng_value = str(value).strip().lower()
+                stops.append(f"{eng_value}/{guj_value}" if guj_value else eng_value)
 
-        # Insert new data into MongoDB
-        if bus_routes:
-            collection.insert_many(bus_routes, ordered=False)
-            print(f"Inserted {len(bus_routes)} bus routes into MongoDB.")
+        if bus_code and stops:
+            bus_routes.append({"Bus Code": bus_code, "Stops": stops})
+    
+    return bus_routes
 
-# Close MongoDB connection
-client.close()
-print("MongoDB connection closed.")
+def store_in_mongo(collection, bus_routes):
+    """Updates MongoDB collection with new routes."""
+    collection.delete_many({})
+    print("✅ Existing bus routes deleted.")
+    
+    if bus_routes:
+        result = collection.insert_many(bus_routes)
+        print(f"✅ Inserted {len(result.inserted_ids)} records into {collection.name}")
+    else:
+        print("⚠️ No valid bus routes found in file")
+
+def main():
+    """Main execution flow."""
+    file_path, collection_name = validate_arguments()
+    df = clean_excel_data(file_path)
+    bus_routes = extract_bus_routes(df)
+    
+    client, collection = connect_to_mongo(collection_name)
+    store_in_mongo(collection, bus_routes)
+    client.close()
+    print("✅ MongoDB connection closed")
+
+if __name__ == "__main__":
+    main()

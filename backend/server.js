@@ -70,23 +70,31 @@ const processFile = (file, collectionName) => {
         const filePath = path.join(UPLOADS_DIR, file.filename);
         const scriptPath = path.join(__dirname, "scripts", "process_pdf.py");
 
-        exec(`python "${scriptPath}" "${filePath}" "${collectionName}"`,
-            { encoding: "utf-8" },
-            (error, stdout, stderr) => {
-                // Delete the uploaded file after processing
-                fs.unlink(filePath, (err) => {
-                    if (err) console.error("⚠️ Error deleting file:", err);
-                });
+        console.log(`🚀 Running script for ${filePath} in collection ${collectionName}`);
 
-                if (error) {
-                    console.error(`❌ Error processing ${collectionName}:`, stderr);
-                    reject(new Error(`Failed to process ${collectionName} file`));
-                } else {
-                    console.log(`✅ ${collectionName} processed successfully`);
-                    resolve({ collection: collectionName, status: "success" });
-                }
+        const process = exec(`python "${scriptPath}" "${filePath}" "${collectionName}"`, { encoding: "utf-8" });
+
+        process.stdout.on("data", (data) => {
+            console.log(`📝 Script Output: ${data.trim()}`);
+        });
+
+        process.stderr.on("data", (data) => {
+            console.error(`❌ Script Error: ${data.trim()}`);
+        });
+
+        process.on("close", (code) => {
+            fs.unlink(filePath, (err) => {
+                if (err) console.error("⚠️ Error deleting file:", err);
+            });
+
+            if (code === 0) {
+                console.log(`✅ Script completed successfully for ${collectionName}`);
+                resolve();
+            } else {
+                console.error(`❌ Script failed with exit code ${code}`);
+                reject(new Error(`Script failed for ${collectionName}. Check logs above.`));
             }
-        );
+        });
     });
 };
 
@@ -105,9 +113,10 @@ app.post("/upload", (req, res) => {
             for (const [field, uploadedFile] of Object.entries(req.files)) {
                 const file = uploadedFile[0];
                 const collectionName = mapFieldToCollection(field);
+
                 if (collectionName) {
-                    const result = await processFile(file, collectionName);
-                    processingResults.push(result);
+                    await processFile(file, collectionName);
+                    processingResults.push({ collection: collectionName, status: "Processed" });
                 }
             }
 
