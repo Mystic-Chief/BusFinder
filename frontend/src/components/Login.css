@@ -1,0 +1,142 @@
+.login-container1 {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh; 
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 50%);
+    padding: 1rem; 
+   
+}
+
+.login-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    padding: 2rem; /* Reduce padding to minimize space */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+    margin: 1rem; /* Add margin for better spacing on small screens */
+}
+
+.login-card h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem; /* Reduce margin-bottom to minimize space */
+    color: #2c3e50;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    font-weight: 700;
+}
+
+.form-group {
+    margin-bottom: 1rem; /* Reduce margin-bottom to minimize space */
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.8rem; /* Reduce padding to minimize space */
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #646cff;
+    box-shadow: 0 0 0 3px rgba(100, 108, 255, 0.1);
+}
+
+.login-button {
+    width: 100%;
+    padding: 0.8rem; /* Reduce padding to minimize space */
+    border-radius: 12px;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    background: #646cff;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-top: 1rem;
+}
+
+.login-button:hover {
+    background: #535bf2;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.login-button:active {
+    transform: translateY(0);
+}
+
+.login-footer {
+    margin-top: 1rem; /* Reduce margin-top to minimize space */
+    font-size: 0.9rem;
+    color: #2c3e50;
+}
+
+.login-footer a {
+    color: #646cff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.login-footer a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .login-container {
+        min-height: 70vh; /* Adjust height for smaller screens */
+        padding: 0.5rem; /* Reduce padding for smaller screens */
+    }
+
+    .login-card {
+        padding: 1.5rem; /* Reduce padding for smaller screens */
+        margin: 0.5rem; /* Reduce margin for smaller screens */
+    }
+
+    .login-card h2 {
+        font-size: 1.75rem; /* Reduce font size for smaller screens */
+    }
+
+    .form-group input {
+        padding: 0.7rem; /* Reduce padding for smaller screens */
+    }
+
+    .login-button {
+        padding: 0.7rem; /* Reduce padding for smaller screens */
+    }
+}
+
+@media (max-width: 480px) {
+    .login-card {
+        padding: 1rem; /* Further reduce padding for very small screens */
+        margin: 0.25rem; /* Further reduce margin for very small screens */
+    }
+
+    .login-card h2 {
+        font-size: 1.5rem; /* Further reduce font size for very small screens */
+    }
+
+    .form-group input {
+        padding: 0.6rem; /* Further reduce padding for very small screens */
+    }
+
+    .login-button {
+        padding: 0.6rem; /* Further reduce padding for very small screens */
+    }
+}

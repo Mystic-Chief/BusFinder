@@ -1,5 +1,10 @@
 const Admin = require("../models/Admin");
-const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const cookie = require("cookie-parser");
+const dotenv = require("dotenv");
+
+dotenv.config();
+const secretKey = process.env.JWT_SECRET;
 
 const handleLogin = async (req, res) => {
     const { username, password } = req.body;
@@ -19,6 +24,15 @@ const handleLogin = async (req, res) => {
             return res.status(401).json({ success: false, message: "Invalid username or password" });
         }
 
+        const token = jwt.sign({userId:user._id},secretKey,{expiresIn:"1h"});
+
+        res.cookie("token",token,{
+            maxAge: 1*24*60*60*1000,
+            httpOnly: true,
+            sameSite: "strict",
+            secure:process.env.NODE_ENV==='production'
+        })
+
         // If credentials are valid, return the user's role
         res.json({ success: true, role: user.role });
     } catch (error) {
@@ -27,4 +41,20 @@ const handleLogin = async (req, res) => {
     }
 };
 
-module.exports = { handleLogin };
+const handleLogout = ()=>{
+    try {
+        res.clearCookie('token',{
+            httpOnly: true,
+            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production'
+        })
+        res.status(200).json({ success: true, message: 'Logged out successfully' });
+        
+    } catch (error) {
+        console.error('Error during logout:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+
+}
+
+module.exports = { handleLogin,handleLogout };

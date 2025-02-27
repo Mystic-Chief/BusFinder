@@ -5,12 +5,19 @@ import AdminUpload from './components/AdminUpload';
 import TemporaryEdits from './components/TemporaryEdits';
 import Login from './components/Login';
 import './App.css';
+import axios from 'axios';
 
 const App = () => {
     const [loggedInUser, setLoggedInUser] = useState(null);
 
-    const handleLogout = () => {
-        setLoggedInUser(null);
+    const handleLogout = async() => {
+        try{
+            await axios.post("http://localhost:5000/api/auth/logout");
+            setLoggedInUser(null);
+        } catch(err){
+            console.log(err);
+            
+        }
     };
 
     return (
@@ -29,8 +36,8 @@ const App = () => {
             )}
 
             <Routes>
-                <Route path="/login" element={
-                    loggedInUser ? <Navigate to="/" /> : <Login setLoggedInUser={setLoggedInUser} />
+                <Route path="/" element={
+                    <BusSearch/>
                 } />
                 
                 <Route path="/admin" element={
@@ -45,10 +52,8 @@ const App = () => {
                     </ProtectedRoute>
                 } />
 
-                <Route path="/" element={
-                    <ProtectedRoute user={loggedInUser}>
-                        <BusSearch />
-                    </ProtectedRoute>
+                <Route path="/login" element={
+                    <Login/>
                 } />
             </Routes>
         </Router>
