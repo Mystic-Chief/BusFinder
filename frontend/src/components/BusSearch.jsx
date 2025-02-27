@@ -15,48 +15,40 @@ const BusSearch = () => {
   const [selectedDirection, setSelectedDirection] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const collectionMap = {
-    firstShift: {
-      incoming: "firstshift_incoming",
-      outgoing: "firstshift_outgoing",
-    },
-    adminMedical: { incoming: "admin_incoming", outgoing: "admin_outgoing" },
-    general: { incoming: "general_incoming", outgoing: "admin_outgoing" },
-  };
-
-  const contactDetails = {
-    KT: [
-      { name: "Maheshbhai", phone: "8200591172" },
-      { name: "Shaileshbhai", phone: "9979206491" },
-    ],
-    PT: [{ name: "Chetanbhai", phone: "9979720733" }],
-  };
-
-  // Function to get the correct contact key
-  function getContactKey(input) {
-    input = input.toUpperCase();
-    if (input.startsWith("PU")) {
-      return "KT";
-    }
-    return input;
-  }
-
-  useEffect(() => {
-    const fetchStops = async () => {
-      if (!selectedShift || !selectedDirection) return;
-      try {
-        const collection = collectionMap[selectedShift][selectedDirection];
-        const response = await axios.get(
-          `http://localhost:5000/api/bus/stops?collection=${collection}`
-        );
-        setStopsList(response.data.stops);
-      } catch (error) {
-        console.error("❌ Error fetching stops:", error);
-        toast.error("Failed to fetch stops. Please try again later.");
-      }
+    const collectionMap = {
+        firstShift: { incoming: "firstshift_incoming", outgoing: "firstshift_outgoing" },
+        adminMedical: { incoming: "admin_incoming", outgoing: "admin_outgoing" },
+        general: { incoming: "general_incoming", outgoing: "admin_outgoing" }
     };
-    fetchStops();
-  }, [selectedShift, selectedDirection]);
+
+    const contactDetails = {
+        KT: [{ name: "Maheshbhai", phone: "8200591172" }, { name: "Shaileshbhai", phone: "9979206491" }],
+        PT: [{ name: "Chetanbhai", phone: "9979720733" }]
+    };
+
+    // Function to get the correct contact key
+    function getContactKey(input) {
+        input = input.toUpperCase();
+        if (input.startsWith("PU")) {
+            return "KT";
+        }
+        return input;
+    }
+
+    useEffect(() => {
+        const fetchStops = async () => {
+            if (!selectedShift || !selectedDirection) return;
+            try {
+                const collection = collectionMap[selectedShift][selectedDirection];
+                const response = await axios.get(`http://localhost:5000/api/bus/stops?collection=${collection}`);
+                setStopsList(response.data.stops);
+            } catch (error) {
+                console.error("❌ Error fetching stops:", error);
+                toast.error("Failed to fetch stops. Please try again later.");
+            }
+        };
+        fetchStops();
+    }, [selectedShift, selectedDirection]);
 
   const handleInputChange = (e) => {
     const value = e.target.value.toLowerCase();
@@ -78,28 +70,24 @@ const BusSearch = () => {
     setFilteredStops([]);
   };
 
-  const searchBuses = async () => {
-    if (!selectedStop || !selectedShift || !selectedDirection) {
-      toast.error("Please select all filters and a stop");
-      return;
-    }
-    try {
-      const collection = collectionMap[selectedShift][selectedDirection];
-      const response = await axios.get(
-        `http://localhost:5000/api/bus/buses/${encodeURIComponent(
-          selectedStop
-        )}?collection=${collection}`
-      );
-      setBuses(response.data.buses || []);
-      setStop("");
-      if (response.data.buses && response.data.buses.length === 0) {
-        toast.warn("No buses found for this stop.");
-      }
-    } catch (error) {
-      console.error("❌ Error fetching data from backend:", error);
-      toast.error("Error fetching data. Check the backend!");
-    }
-  };
+    const searchBuses = async () => {
+        if (!selectedStop || !selectedShift || !selectedDirection) {
+            toast.error("Please select all filters and a stop");
+            return;
+        }
+        try {
+            const collection = collectionMap[selectedShift][selectedDirection];
+            const response = await axios.get(`http://localhost:5000/api/bus/buses/${encodeURIComponent(selectedStop)}?collection=${collection}`);
+            setBuses(response.data.buses || []);
+            setStop("");
+            if (response.data.buses && response.data.buses.length === 0) {
+                toast.warn("No buses found for this stop.");
+            }
+        } catch (error) {
+            console.error("❌ Error fetching data from backend:", error);
+            toast.error("Error fetching data. Check the backend!");
+        }
+    };
 
   return (
     <>
@@ -209,14 +197,14 @@ const BusSearch = () => {
           Search Buses
         </button>
 
-        {/* Display search results */}
-        <div className="search-results">
-          {buses.length > 0 ? (
-            buses.map((bus, index) => {
-              // Extract bus type from the original bus number
-              const busType = bus.originalBusNumber.split(" - ")[0];
-              const contactKey = getContactKey(busType); // Use getContactKey to handle "PU" case
-              const contacts = contactDetails[contactKey] || [];
+            {/* Display search results */}
+            <div className="search-results">
+                {buses.length > 0 ? (
+                    buses.map((bus, index) => {
+                        // Extract bus type from the original bus number
+                        const busType = bus.originalBusNumber.split(" - ")[0];
+                        const contactKey = getContactKey(busType); // Use getContactKey to handle "PU" case
+                        const contacts = contactDetails[contactKey] || [];
 
               return (
                 <div key={index} className="result-item">
