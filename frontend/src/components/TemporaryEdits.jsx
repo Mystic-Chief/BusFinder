@@ -182,6 +182,8 @@ const TemporaryEdits = ({ userRole }) => {
                         // Merge stops and preserve temporary status
                         existing.Stops = [...new Set([...existing.Stops, ...bus.Stops])];
                         existing.isTemporary = existing.isTemporary || bus.isTemporary;
+                        existing.partialChanges = [...(existing.partialChanges || []), ...(bus.partialChanges || [])];
+                        existing.bulkChanges = [...(existing.bulkChanges || []), ...(bus.bulkChanges || [])];
                     } else {
                         merged.push(bus);
                     }
@@ -190,7 +192,10 @@ const TemporaryEdits = ({ userRole }) => {
                 .map(bus => (
                     <div key={bus['Bus Code']} className={`bus-card ${bus.isTemporary ? 'temporary' : ''}`}>
                         <div className="bus-header">
-                            <h3>{bus['Bus Code']} {bus.isTemporary && '(Temporary)'}</h3>
+                            <h3>
+                                {bus['Bus Code']}
+                                {bus.isTemporary && ' (Temporary Changes)'}
+                            </h3>
                             <div className="bus-actions">
                                 <input
                                     type="text"
@@ -208,24 +213,30 @@ const TemporaryEdits = ({ userRole }) => {
                         </div>
                         <div className="stops-list">
                             {bus.Stops.map((stop, index) => {
+                                // Check if the stop is part of a partial change
                                 const isTempStop = bus.partialChanges?.some(pc =>
                                     pc.stops.includes(stop)
                                 );
 
+                                // Check if the stop is part of a bulk change
+                                const isBulkChange = bus.bulkChanges?.length > 0;
+
                                 return (
                                     <div
                                         key={`${bus._id}-${index}`}
-                                        className={`stop-item ${isTempStop ? 'temp-stop' : ''}`}
-                                        onClick={() => !isTempStop && handleStopSelect(bus._id, index)}
+                                        className={`stop-item ${isTempStop || isBulkChange ? 'temp-stop' : ''}`}
+                                        onClick={() => !isTempStop && !isBulkChange && handleStopSelect(bus._id, index)}
                                     >
                                         <input
                                             type="checkbox"
                                             checked={selectedStops[bus._id]?.includes(index)}
                                             readOnly
-                                            disabled={isTempStop}
+                                            disabled={isTempStop || isBulkChange}
                                         />
                                         <span>{stop}</span>
-                                        {isTempStop && <span className="temp-badge">Temporary</span>}
+                                        {(isTempStop || isBulkChange) && (
+                                            <span className="temp-badge">Temporary</span>
+                                        )}
                                     </div>
                                 );
                             })}

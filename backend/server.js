@@ -252,8 +252,9 @@ app.get("/editable-data", async (req, res) => {
         // Create final buses list
         const buses = originalBuses.map(bus => ({
             ...bus,
-            isTemporary: false,
-            partialChanges: []
+            isTemporary: false, // Default to false
+            partialChanges: [],
+            bulkChanges: []
         }));
 
         // Add temporary buses and modify originals
@@ -274,12 +275,14 @@ app.get("/editable-data", async (req, res) => {
                                 _id: `temp_${newBusNumber}`,
                                 'Bus Code': newBusNumber,
                                 Stops: [],
-                                isTemporary: true,
-                                partialChanges: []
+                                isTemporary: true, // Mark as temporary
+                                partialChanges: [],
+                                bulkChanges: []
                             };
                             buses.push(tempBus);
                         }
                         tempBus.Stops.push(...change.stops);
+                        tempBus.isTemporary = true; // Ensure it's marked as temporary
                     }
                 }
                 else if (change.type === 'bulk') {
@@ -287,7 +290,8 @@ app.get("/editable-data", async (req, res) => {
                     const originalBus = buses.find(b => b._id.toString() === change.busId);
                     if (originalBus) {
                         originalBus['Bus Code'] = newBusNumber;
-                        originalBus.isTemporary = true;
+                        originalBus.isTemporary = true; // Mark as temporary
+                        originalBus.bulkChanges.push(change);
                     }
                 }
             });
