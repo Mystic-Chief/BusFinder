@@ -1,30 +1,64 @@
 const Admin = require("../models/Admin");
-const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const cookie = require("cookie-parser");
+const dotenv = require("dotenv");
+
+dotenv.config();
+const secretKey = process.env.JWT_SECRET;
 
 const handleLogin = async (req, res) => {
-    const { username, password } = req.body;
-
     try {
-        // Find the user in the database
-        const user = await Admin.findOne({ username });
-
-        if (!user) {
-            return res.status(401).json({ success: false, message: "Invalid username or password" });
+        const user = await Admin.findOne({ username: req.body.username });
+        if (!user || req.body.password !== user.password) {
+            return res.status(401).json({ success: false, message: "Invalid credentials" });
         }
 
-        // Compare the provided password with the hashed password in the database
-        const isPasswordValid = password === user.password; // For now, using plain text comparison
+        const token = jwt.sign({ userId: user._id, role: user.role }, secretKey, { expiresIn: "1h" });
 
-        if (!isPasswordValid) {
-            return res.status(401).json({ success: false, message: "Invalid username or password" });
-        }
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Strict",
+            maxAge: 60 * 60 * 1000 // 1 hour
+        });
 
-        // If credentials are valid, return the user's role
         res.json({ success: true, role: user.role });
     } catch (error) {
-        console.error("❌ Error validating credentials:", error);
+        console.error("Login error:", error);
         res.status(500).json({ success: false, message: "Internal server error" });
     }
 };
 
-module.exports = { handleLogin };
+const handleLogout = (req, res) => {
+    res.clearCookie("token", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict"
+    });
+    res.json({ success: true, message: "Logged out successfully" });
+};
+
+const validateToken = async (req, res) => {
+    const token = req.cookies.token;
+
+    if (!token) {
+        return res.status(200).json({ success: false, message: "No token provided" });
+    }
+
+    try {
+        const decoded = jwt.verify(token, secretKey);
+        const user = await Admin.findById(decoded.userId);
+
+        if (!user) {
+            return res.status(200).json({ success: false, message: "User not found" });
+        }
+
+        res.json({ success: true, role: user.role });
+    } catch (error) {
+        console.error("Token validation error:", error);
+        res.clearCookie("token");
+        res.status(200).json({ success: false, message: "Invalid token" });
+    }
+};
+
+module.exports = { handleLogin,handleLogout, validateToken  };
