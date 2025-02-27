@@ -65,6 +65,20 @@ const TemporaryEdits = ({ userRole }) => {
         fetchData();
     }, [shift, direction, refreshKey, searchTerm]);
 
+    // Normalize bus number input
+    const normalizeBusNumber = (input) => {
+        // Remove all spaces and hyphens, then split into parts
+        const cleaned = input.replace(/[\s-]/g, '');
+        const match = cleaned.match(/^([a-zA-Z]+)(\d+)$/);
+        
+        if (match) {
+            const prefix = match[1].toUpperCase();
+            const number = match[2];
+            return `${prefix} - ${number}`;
+        }
+        return input; // Return original if pattern doesn't match
+    };
+
     const handleStopSelect = (busId, stopIndex) => {
         setSelectedStops(prev => ({
             ...prev,
@@ -89,7 +103,8 @@ const TemporaryEdits = ({ userRole }) => {
     };
 
     const handleBulkChange = async (busId) => {
-        const newNumber = newBusNumbers[busId]?.trim();
+        const rawNumber = newBusNumbers[busId]?.trim();
+        const newNumber = normalizeBusNumber(rawNumber);
         if (!newNumber) return;
 
         try {
@@ -109,7 +124,8 @@ const TemporaryEdits = ({ userRole }) => {
     };
 
     const handlePartialChange = async (busId) => {
-        const newNumber = newBusNumbers[busId]?.trim();
+        const rawNumber = newBusNumbers[busId]?.trim();
+        const newNumber = normalizeBusNumber(rawNumber);
         if (!newNumber || !selectedStops[busId]?.length) return;
 
         try {
