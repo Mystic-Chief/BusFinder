@@ -31,12 +31,20 @@ const TemporaryEdits = ({ userRole }) => {
 
                 // Role-based filtering
                 if (userRole.includes('supervisor')) {
-                    const busType = userRole.split('-')[0].toUpperCase();
-                    fetchedBuses = fetchedBuses.filter(bus =>
-                        bus['Bus Code'].startsWith(busType)
-                    );
+                    const busType = userRole.split('-')[0].toUpperCase(); // "kt" => "KT"
+                    
+                    fetchedBuses = fetchedBuses.filter(bus => {
+                        const busPrefix = bus['Bus Code'].split(' ')[0].toUpperCase();
+                        
+                        // KT supervisors see both KT and PU buses
+                        if (busType === 'KT') {
+                            return busPrefix === 'KT' || busPrefix === 'PU';
+                        }
+                        
+                        // Other supervisors see only their type
+                        return busPrefix === busType;
+                    });
                 }
-
                 // Search filtering
                 if (searchTerm) {
                     const lowerSearch = searchTerm.toLowerCase();
