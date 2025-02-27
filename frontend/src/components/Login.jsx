@@ -16,21 +16,19 @@ const Login = ({ setLoggedInUser }) => {
         setError('');
 
         try {
-            // Call the backend API to validate credentials
-            const response = await axios.post('http://localhost:5000/api/auth/login', {
-                username,
-                password
-            });
+            const response = await axios.post(
+                'http://localhost:5000/api/auth/login', 
+                { username, password },
+                { withCredentials: true }
+            );
 
             if (response.data.success) {
-                // Set the logged-in user and navigate
                 setLoggedInUser({ role: response.data.role });
                 navigate(response.data.role === 'admin' ? '/admin' : '/temporary-edits');
-            }  else {
+            } else {
                 setError(response.data.message || 'Invalid credentials');
             }
         } catch (error) {
-            console.error('❌ Error validating credentials:', error);
             setError('Failed to validate credentials. Please try again.');
         } finally {
             setLoading(false);
@@ -73,5 +71,4 @@ const Login = ({ setLoggedInUser }) => {
         </div>
     );
 };
-
 export default Login;

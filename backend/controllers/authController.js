@@ -7,54 +7,58 @@ dotenv.config();
 const secretKey = process.env.JWT_SECRET;
 
 const handleLogin = async (req, res) => {
-    const { username, password } = req.body;
-
     try {
-        // Find the user in the database
-        const user = await Admin.findOne({ username });
-
-        if (!user) {
-            return res.status(401).json({ success: false, message: "Invalid username or password" });
+        const user = await Admin.findOne({ username: req.body.username });
+        if (!user || req.body.password !== user.password) {
+            return res.status(401).json({ success: false, message: "Invalid credentials" });
         }
 
-        // Compare the provided password with the hashed password in the database
-        const isPasswordValid = password === user.password; // For now, using plain text comparison
+        const token = jwt.sign({ userId: user._id, role: user.role }, secretKey, { expiresIn: "1h" });
 
-        if (!isPasswordValid) {
-            return res.status(401).json({ success: false, message: "Invalid username or password" });
-        }
-
-        const token = jwt.sign({userId:user._id},secretKey,{expiresIn:"1h"});
-
-        res.cookie("token",token,{
-            maxAge: 1*24*60*60*1000,
+        res.cookie("token", token, {
             httpOnly: true,
-            sameSite: "strict",
-            secure:process.env.NODE_ENV==='production'
-        })
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Strict",
+            maxAge: 60 * 60 * 1000 // 1 hour
+        });
 
-        // If credentials are valid, return the user's role
         res.json({ success: true, role: user.role });
     } catch (error) {
-        console.error("❌ Error validating credentials:", error);
+        console.error("Login error:", error);
         res.status(500).json({ success: false, message: "Internal server error" });
     }
 };
 
-const handleLogout = ()=>{
-    try {
-        res.clearCookie('token',{
-            httpOnly: true,
-            sameSite: 'strict',
-            secure: process.env.NODE_ENV === 'production'
-        })
-        res.status(200).json({ success: true, message: 'Logged out successfully' });
-        
-    } catch (error) {
-        console.error('Error during logout:', error);
-        res.status(500).json({ success: false, message: 'Internal server error' });
+const handleLogout = (req, res) => {
+    res.clearCookie("token", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict"
+    });
+    res.json({ success: true, message: "Logged out successfully" });
+};
+
+const validateToken = async (req, res) => {
+    const token = req.cookies.token;
+
+    if (!token) {
+        return res.status(200).json({ success: false, message: "No token provided" });
     }
 
-}
+    try {
+        const decoded = jwt.verify(token, secretKey);
+        const user = await Admin.findById(decoded.userId);
 
-module.exports = { handleLogin,handleLogout };
+        if (!user) {
+            return res.status(200).json({ success: false, message: "User not found" });
+        }
+
+        res.json({ success: true, role: user.role });
+    } catch (error) {
+        console.error("Token validation error:", error);
+        res.clearCookie("token");
+        res.status(200).json({ success: false, message: "Invalid token" });
+    }
+};
+
+module.exports = { handleLogin,handleLogout, validateToken  };

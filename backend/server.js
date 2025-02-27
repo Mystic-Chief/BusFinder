@@ -6,9 +6,21 @@ const authRoutes = require("./routes/authRoutes");
 const busRoutes = require("./routes/busRoutes");
 const fileRoutes = require("./routes/fileRoutes");
 const tempEditRoutes = require("./routes/tempEditRoutes");
+const cookie = require("cookie-parser");
 
 const app = express();
-app.use(cors());
+
+const corsOptions = {
+  origin: [
+    "http://localhost:5173", // Development
+    "https://your-frontend-domain.com" // Production
+  ],
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization"]
+};
+
+app.use(cors(corsOptions));
+app.use(cookie());
 app.use(express.json());
 
 // Load environment variables
