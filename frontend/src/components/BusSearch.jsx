@@ -25,6 +25,15 @@ const BusSearch = () => {
         PT: [{ name: "Chetanbhai", phone: "9979720733" }]
     };
 
+    // Function to get the correct contact key
+    function getContactKey(input) {
+        input = input.toUpperCase();
+        if (input.startsWith("PU")) {
+            return "KT";
+        }
+        return input;
+    }
+
     useEffect(() => {
         const fetchStops = async () => {
             if (!selectedShift || !selectedDirection) return;
@@ -67,7 +76,7 @@ const BusSearch = () => {
             const collection = collectionMap[selectedShift][selectedDirection];
             const response = await axios.get(`http://localhost:5000/buses/${encodeURIComponent(selectedStop)}?collection=${collection}`);
             setBuses(response.data.buses || []);
-            setStop("")
+            setStop("");
             if (response.data.buses && response.data.buses.length === 0) {
                 toast.warn("No buses found for this stop.");
             }
@@ -135,7 +144,8 @@ const BusSearch = () => {
                     buses.map((bus, index) => {
                         // Extract bus type from the original bus number
                         const busType = bus.originalBusNumber.split(" - ")[0];
-                        const contacts = contactDetails[busType] || [];
+                        const contactKey = getContactKey(busType); // Use getContactKey to handle "PU" case
+                        const contacts = contactDetails[contactKey] || [];
 
                         return (
                             <div key={index} className="result-item">
