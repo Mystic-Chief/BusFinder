@@ -189,70 +189,84 @@ const TemporaryEdits = ({ userRole }) => {
                     }
                     return merged;
                 }, [])
-                .map(bus => (
-                    <div key={bus['Bus Code']} className={`bus-card ${bus.isTemporary ? 'temporary' : ''}`}>
-                        <div className="bus-header">
-                            <h3>
-                                {bus['Bus Code']}
-                                {bus.isTemporary && ' (Temporary Changes)'}
-                            </h3>
-                            <div className="bus-actions">
-                                <input
-                                    type="text"
-                                    placeholder="New Bus #"
-                                    value={newBusNumbers[bus._id] || ''}
-                                    onChange={(e) => handleBusNumberChange(bus._id, e.target.value)}
-                                />
-                                <button
-                                    onClick={() => handleBulkChange(bus._id)}
-                                    disabled={selectedStops[bus._id]?.length > 0 || !newBusNumbers[bus._id]?.trim()}
-                                >
-                                    Change All
-                                </button>
-                            </div>
-                        </div>
-                        <div className="stops-list">
-                            {bus.Stops.map((stop, index) => {
-                                // Check if the stop is part of a partial change
-                                const isTempStop = bus.partialChanges?.some(pc =>
-                                    pc.stops.includes(stop)
-                                );
-
-                                // Check if the stop is part of a bulk change
-                                const isBulkChange = bus.bulkChanges?.length > 0;
-
-                                return (
-                                    <div
-                                        key={`${bus._id}-${index}`}
-                                        className={`stop-item ${isTempStop || isBulkChange ? 'temp-stop' : ''}`}
-                                        onClick={() => !isTempStop && !isBulkChange && handleStopSelect(bus._id, index)}
+                .map(bus => {
+                    console.log("Bus:", bus['Bus Code'], "Partial Changes:", bus.partialChanges, "Bulk Changes:", bus.bulkChanges);
+                    return (
+                        <div key={`${bus['Bus Code']}-${bus._id}`} className={`bus-card ${bus.isTemporary ? 'temporary' : ''}`}>
+                            <div className="bus-header">
+                                <h3>
+                                    {bus['Bus Code']}
+                                    {bus.isTemporary && '(Temporary Changes)'}
+                                </h3>
+                                <div className="bus-actions">
+                                    <input
+                                        type="text"
+                                        placeholder="New Bus #"
+                                        value={newBusNumbers[bus._id] || ''}
+                                        onChange={(e) => handleBusNumberChange(bus._id, e.target.value)}
+                                    />
+                                    <button
+                                        onClick={() => handleBulkChange(bus._id)}
+                                        disabled={selectedStops[bus._id]?.length > 0 || !newBusNumbers[bus._id]?.trim()}
                                     >
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedStops[bus._id]?.includes(index)}
-                                            readOnly
-                                            disabled={isTempStop || isBulkChange}
-                                        />
-                                        <span>{stop}</span>
-                                        {(isTempStop || isBulkChange) && (
-                                            <span className="temp-badge">Temporary</span>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                        {selectedStops[bus._id]?.length > 0 && (
-                            <button
-                                className="partial-save"
-                                onClick={() => handlePartialChange(bus._id)}
-                                disabled={!newBusNumbers[bus._id]?.trim()}
-                            >
-                                Save for {selectedStops[bus._id].length} selected stops
-                            </button>
-                        )}
-                    </div>
-                ))}
+                                        Change All
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="stops-list">
+                                {bus.Stops.map((stop, index) => {
+                                    // Check if the stop is part of a partial change
+                                    const isTempStop = bus.partialChanges?.some(pc => {
+                                        if (!pc.stops || !Array.isArray(pc.stops)) {
+                                            console.error("Invalid partialChanges.stops:", pc.stops);
+                                            return false;
+                                        }
+                                        console.log("Checking partial change:", pc.stops, "for stop:", stop);
+                                        return pc.stops.includes(stop);
+                                    });
 
+                                    // Check if the stop is part of a bulk change
+                                    const isBulkStop = bus.bulkChanges?.some(bc => {
+                                        if (!bc.stops || !Array.isArray(bc.stops)) {
+                                            console.error("Invalid bulkChanges.stops:", bc.stops);
+                                            return false;
+                                        }
+                                        console.log("Checking bulk change:", bc.stops, "for stop:", stop);
+                                        return bc.stops.includes(stop);
+                                    });
+
+                                    return (
+                                        <div
+                                            key={`${bus._id}-${index}`}
+                                            className={`stop-item ${isTempStop || isBulkStop ? 'temp-stop' : ''}`}
+                                            onClick={() => !isTempStop && !isBulkStop && handleStopSelect(bus._id, index)}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedStops[bus._id]?.includes(index)}
+                                                readOnly
+                                                disabled={isTempStop || isBulkStop}
+                                            />
+                                            <span>{stop}</span>
+                                            {(isTempStop || isBulkStop) && (
+                                                <span className="temp-badge">Temporary</span>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            {selectedStops[bus._id]?.length > 0 && (
+                                <button
+                                    className="partial-save"
+                                    onClick={() => handlePartialChange(bus._id)}
+                                    disabled={!newBusNumbers[bus._id]?.trim()}
+                                >
+                                    Save for {selectedStops[bus._id].length} selected stops
+                                </button>
+                            )}
+                        </div>
+                    );
+                })}
             <ToastContainer />
         </div>
     );

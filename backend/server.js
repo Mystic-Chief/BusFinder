@@ -252,47 +252,68 @@ app.get("/editable-data", async (req, res) => {
         // Create final buses list
         const buses = originalBuses.map(bus => ({
             ...bus,
-            isTemporary: false, // Default to false
+            isTemporary: false,
             partialChanges: [],
             bulkChanges: []
         }));
 
-        // Add temporary buses and modify originals
+        // Process temporary changes
         Object.entries(tempGroups).forEach(([newBusNumber, changes]) => {
             changes.forEach(change => {
+                const originalBus = buses.find(b => b._id.toString() === change.busId);
+                if (!originalBus) return;
+
+                // Inside the partial change handling block:
                 if (change.type === 'partial') {
-                    // Find original bus
-                    const originalBus = buses.find(b => b._id.toString() === change.busId);
-                    if (originalBus) {
-                        // Remove stops from original
-                        originalBus.Stops = originalBus.Stops.filter(s => !change.stops.includes(s));
-                        originalBus.partialChanges.push(change);
-                        
-                        // Add to temporary group
-                        let tempBus = buses.find(b => b['Bus Code'] === newBusNumber);
-                        if (!tempBus) {
-                            tempBus = {
-                                _id: `temp_${newBusNumber}`,
-                                'Bus Code': newBusNumber,
-                                Stops: [],
-                                isTemporary: true, // Mark as temporary
-                                partialChanges: [],
-                                bulkChanges: []
-                            };
-                            buses.push(tempBus);
-                        }
-                        tempBus.Stops.push(...change.stops);
-                        tempBus.isTemporary = true; // Ensure it's marked as temporary
+                    // Remove stops from original bus
+                    originalBus.Stops = originalBus.Stops.filter(s => !change.stops.includes(s));
+
+                    // Add to destination bus
+                    let destinationBus = buses.find(b => b['Bus Code'] === newBusNumber);
+                    if (!destinationBus) {
+                        destinationBus = {
+                            _id: `temp_${newBusNumber}_${Date.now()}`,
+                            'Bus Code': newBusNumber,
+                            Stops: [],
+                            isTemporary: true,
+                            partialChanges: [], // Initialize partialChanges for destination
+                            bulkChanges: []
+                        };
+                        buses.push(destinationBus);
                     }
-                }
-                else if (change.type === 'bulk') {
+
+                    // Add the PARTIAL CHANGE to the DESTINATION BUS
+                    destinationBus.partialChanges.push({
+                        ...change,
+                        stops: change.stops // Track the stops added to this bus
+                    });
+
+                    destinationBus.Stops.push(...change.stops);
+                    destinationBus.isTemporary = true;
+                } else if (change.type === 'bulk') {
                     // Handle bulk changes
-                    const originalBus = buses.find(b => b._id.toString() === change.busId);
-                    if (originalBus) {
-                        originalBus['Bus Code'] = newBusNumber;
-                        originalBus.isTemporary = true; // Mark as temporary
-                        originalBus.bulkChanges.push(change);
+                    const movedStops = [...originalBus.Stops];
+                    originalBus.Stops = [];
+
+                    // Add to destination bus
+                    let destinationBus = buses.find(b => b['Bus Code'] === newBusNumber);
+                    if (!destinationBus) {
+                        destinationBus = {
+                            _id: `temp_${newBusNumber}_${Date.now()}`, // Unique ID for temporary bus
+                            'Bus Code': newBusNumber,
+                            Stops: [],
+                            isTemporary: true,
+                            partialChanges: [],
+                            bulkChanges: []
+                        };
+                        buses.push(destinationBus);
                     }
+                    destinationBus.Stops.push(...movedStops);
+                    destinationBus.isTemporary = true;
+                    destinationBus.bulkChanges.push({
+                        ...change,
+                        stops: movedStops
+                    });
                 }
             });
         });
