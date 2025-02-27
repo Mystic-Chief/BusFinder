@@ -4,12 +4,15 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../components/TemporaryEdits.css';
 
-const TemporaryEdits = () => {
+const TemporaryEdits = ({ userRole }) => {
     const [shift, setShift] = useState('');
     const [direction, setDirection] = useState('');
     const [buses, setBuses] = useState([]);
     const [selectedStops, setSelectedStops] = useState({});
-    const [newBusNumbers, setNewBusNumbers] = useState({}); // Initialize as empty object
+    const [newBusNumbers, setNewBusNumbers] = useState({});
+    const [refreshKey, setRefreshKey] = useState(0);
+    const [searchType, setSearchType] = useState('busNumber');
+    const [searchTerm, setSearchTerm] = useState('');
 
     const collectionMap = {
         firstShift: { incoming: 'firstshift', outgoing: 'firstshift' },
@@ -17,7 +20,6 @@ const TemporaryEdits = () => {
         general: { incoming: 'general_incoming', outgoing: 'admin_outgoing' }
     };
 
-    // Fetch buses and stops when shift/direction changes
     useEffect(() => {
         const fetchData = async () => {
             if (!shift || !direction) return;
@@ -25,16 +27,36 @@ const TemporaryEdits = () => {
             try {
                 const collection = collectionMap[shift][direction];
                 const response = await axios.get(`http://localhost:5000/editable-data?collection=${collection}`);
-                setBuses(response.data.buses);
+                let fetchedBuses = response.data.buses;
+
+                // Role-based filtering
+                if (userRole.includes('supervisor')) {
+                    const busType = userRole.split('-')[0].toUpperCase();
+                    fetchedBuses = fetchedBuses.filter(bus =>
+                        bus['Bus Code'].startsWith(busType)
+                    );
+                }
+
+                // Search filtering
+                if (searchTerm) {
+                    const lowerSearch = searchTerm.toLowerCase();
+                    fetchedBuses = fetchedBuses.filter(bus => {
+                        if (searchType === 'busNumber') {
+                            return bus['Bus Code'].toLowerCase().includes(lowerSearch);
+                        }
+                        return bus.Stops.some(stop => stop.toLowerCase().includes(lowerSearch));
+                    });
+                }
+
+                setBuses(fetchedBuses);
             } catch (error) {
                 toast.error('Failed to load bus data');
             }
         };
 
         fetchData();
-    }, [shift, direction]);
+    }, [shift, direction, refreshKey, searchTerm]);
 
-    // Handle stop selection
     const handleStopSelect = (busId, stopIndex) => {
         setSelectedStops(prev => ({
             ...prev,
@@ -44,21 +66,23 @@ const TemporaryEdits = () => {
         }));
     };
 
-    // Handle bus number input change
     const handleBusNumberChange = (busId, value) => {
         setNewBusNumbers(prev => ({
             ...prev,
-            [busId]: value || '' // Ensure value is never undefined
+            [busId]: value || ''
         }));
     };
 
-    // Handle bulk change for entire bus
+    const resetBusNumberInput = (busId) => {
+        setNewBusNumbers(prev => ({
+            ...prev,
+            [busId]: '' // Reset the input field for this bus
+        }));
+    };
+
     const handleBulkChange = async (busId) => {
-        const newNumber = newBusNumbers[busId];
-        if (!newNumber) {
-            toast.error('Please enter a new bus number');
-            return;
-        }
+        const newNumber = newBusNumbers[busId]?.trim();
+        if (!newNumber) return;
 
         try {
             await axios.post('http://localhost:5000/temp-edit', {
@@ -67,22 +91,22 @@ const TemporaryEdits = () => {
                 newBusNumber: newNumber,
                 collection: collectionMap[shift][direction]
             });
-            toast.success('Bulk change saved temporarily');
+            toast.success('Bulk change saved');
+            setRefreshKey(prev => prev + 1);
         } catch (error) {
             toast.error('Failed to save bulk change');
         }
+
+        resetBusNumberInput(busId);
     };
 
-    // Handle partial changes for selected stops
     const handlePartialChange = async (busId) => {
-        const newNumber = newBusNumbers[busId];
-        if (!newNumber || !selectedStops[busId]?.length) {
-            toast.error('Please select stops and enter a new bus number');
-            return;
-        }
+        const newNumber = newBusNumbers[busId]?.trim();
+        if (!newNumber || !selectedStops[busId]?.length) return;
 
         try {
             const bus = buses.find(b => b._id === busId);
+
             await axios.post('http://localhost:5000/temp-edit', {
                 type: 'partial',
                 busId,
@@ -90,11 +114,15 @@ const TemporaryEdits = () => {
                 stops: bus.Stops.filter((_, i) => selectedStops[busId].includes(i)),
                 collection: collectionMap[shift][direction]
             });
-            toast.success('Partial changes saved temporarily');
-            setSelectedStops(prev => ({ ...prev, [busId]: [] })); // Clear selection
+            toast.success('Partial changes saved');
+            setSelectedStops(prev => ({ ...prev, [busId]: [] }));
+            setRefreshKey(prev => prev + 1);
         } catch (error) {
             toast.error('Failed to save partial changes');
         }
+
+        resetBusNumberInput(busId);
+
     };
 
     return (
@@ -110,8 +138,8 @@ const TemporaryEdits = () => {
                 >
                     <option value="">Select Shift</option>
                     <option value="firstShift">First Shift</option>
-                    <option value="adminMedical">ADM/Medical Shift</option>
-                    <option value="general">General Shift</option>
+                    <option value="adminMedical">ADM/Medical</option>
+                    <option value="general">General</option>
                 </select>
 
                 <div className="direction-radio">
@@ -136,54 +164,122 @@ const TemporaryEdits = () => {
                 </div>
             </div>
 
-            {/* Bus List */}
-            {buses.map(bus => (
-                <div key={bus._id} className="bus-card">
-                    <div className="bus-header">
-                        <h3>Original Bus: {bus['Bus Code']}</h3>
-                        <div className="bus-actions">
-                            <input
-                                type="text"
-                                placeholder="New Bus #"
-                                value={newBusNumbers[bus._id] || ''} // Fallback to empty string
-                                onChange={(e) => handleBusNumberChange(bus._id, e.target.value)}
-                            />
-                            <button onClick={() => handleBulkChange(bus._id)}>
-                                Change All
-                            </button>
-                        </div>
-                    </div>
+            {/* Conditional Search Controls */}
+            {shift && direction && (
+                <div className="search-controls">
+                    <select
+                        value={searchType}
+                        onChange={(e) => setSearchType(e.target.value)}
+                        className="search-select"
+                    >
+                        <option value="busNumber">Search by Bus Number</option>
+                        <option value="busStop">Search by Bus Stop</option>
+                    </select>
 
-                    {/* Stops List */}
-                    <div className="stops-list">
-                        {bus.Stops.map((stop, index) => (
-                            <div
-                                key={index}
-                                className="stop-item"
-                                onClick={() => handleStopSelect(bus._id, index)}
-                            >
-                                <input
-                                    type="checkbox"
-                                    checked={selectedStops[bus._id]?.includes(index)}
-                                    readOnly
-                                />
-                                <span>{stop}</span>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Partial Save Button */}
-                    {selectedStops[bus._id]?.length > 0 && (
-                        <button
-                            className="partial-save"
-                            onClick={() => handlePartialChange(bus._id)}
-                        >
-                            Save for {selectedStops[bus._id].length} selected stops
-                        </button>
-                    )}
+                    <input
+                        type="text"
+                        placeholder={`Search ${searchType === 'busNumber' ? 'bus numbers' : 'stops'}...`}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="search-input"
+                    />
                 </div>
-            ))}
+            )}
 
+            {/* Bus List */}
+            {buses
+                .reduce((merged, bus) => {
+                    const existing = merged.find(b => b['Bus Code'] === bus['Bus Code']);
+                    if (existing) {
+                        // Merge stops and preserve temporary status
+                        existing.Stops = [...new Set([...existing.Stops, ...bus.Stops])];
+                        existing.isTemporary = existing.isTemporary || bus.isTemporary;
+                        existing.partialChanges = [...(existing.partialChanges || []), ...(bus.partialChanges || [])];
+                        existing.bulkChanges = [...(existing.bulkChanges || []), ...(bus.bulkChanges || [])];
+                    } else {
+                        merged.push(bus);
+                    }
+                    return merged;
+                }, [])
+                .filter(bus => bus.Stops.length > 0) // Filter out buses with no stops
+                .map(bus => {
+                    console.log("Bus:", bus['Bus Code'], "Partial Changes:", bus.partialChanges, "Bulk Changes:", bus.bulkChanges);
+                    return (
+                        <div key={`${bus['Bus Code']}-${bus._id}`} className={`bus-card ${bus.isTemporary ? 'temporary' : ''}`}>
+                            <div className="bus-header">
+                                <h3>
+                                    {bus['Bus Code']}
+                                    {bus.isTemporary && ' (Temporary Changes)'}
+                                </h3>
+                                <div className="bus-actions">
+                                    <input
+                                        type="text"
+                                        placeholder="New Bus #"
+                                        value={newBusNumbers[bus._id] || ''}
+                                        onChange={(e) => handleBusNumberChange(bus._id, e.target.value)}
+                                    />
+                                    <button
+                                        onClick={() => handleBulkChange(bus._id)}
+                                        disabled={selectedStops[bus._id]?.length > 0 || !newBusNumbers[bus._id]?.trim()}
+                                    >
+                                        Change All
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="stops-list">
+                                {bus.Stops.map((stop, index) => {
+                                    // Check if the stop is part of a partial change
+                                    const isTempStop = bus.partialChanges?.some(pc => {
+                                        if (!pc.stops || !Array.isArray(pc.stops)) {
+                                            console.error("Invalid partialChanges.stops:", pc.stops);
+                                            return false;
+                                        }
+                                        console.log("Checking partial change:", pc.stops, "for stop:", stop);
+                                        return pc.stops.includes(stop);
+                                    });
+
+                                    // Check if the stop is part of a bulk change
+                                    const isBulkStop = bus.bulkChanges?.some(bc => {
+                                        if (!bc.stops || !Array.isArray(bc.stops)) {
+                                            console.error("Invalid bulkChanges.stops:", bc.stops);
+                                            return false;
+                                        }
+                                        console.log("Checking bulk change:", bc.stops, "for stop:", stop);
+                                        return bc.stops.includes(stop);
+                                    });
+
+                                    return (
+                                        <div
+                                            key={`${bus._id}-${index}`}
+                                            className={`stop-item ${isTempStop || isBulkStop ? 'temp-stop' : ''}`}
+                                            onClick={() => !isTempStop && !isBulkStop && handleStopSelect(bus._id, index)}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedStops[bus._id]?.includes(index)}
+                                                readOnly
+                                                disabled={isTempStop || isBulkStop}
+                                            />
+                                            <span>{stop}</span>
+                                            {(isTempStop || isBulkStop) && (
+                                                <span className="temp-badge">Temporary</span>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            {selectedStops[bus._id]?.length > 0 && (
+                                <button
+                                    className="partial-save"
+                                    onClick={() => handlePartialChange(bus._id)}
+                                    disabled={!newBusNumbers[bus._id]?.trim()}
+                                >
+                                    Save for {selectedStops[bus._id].length} selected stops
+                                </button>
+                            )}
+                        </div>
+                    );
+                })}
             <ToastContainer />
         </div>
     );
