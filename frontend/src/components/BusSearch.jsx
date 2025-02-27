@@ -3,75 +3,75 @@ import axios from "axios";
 import { Link } from 'react-router-dom';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import "../components/BusSearch.css"
+import "../components/BusSearch.css";
+
 const BusSearch = () => {
     const [stop, setStop] = useState("");
     const [buses, setBuses] = useState([]);
-    const [stopsList, setStopsList] = useState([]); // Stores all available stops
-    const [filteredStops, setFilteredStops] = useState([]); // Filtered suggestions
-    const [selectedStop, setSelectedStop] = useState(null); // Stores confirmed stop selection
+    const [stopsList, setStopsList] = useState([]);
+    const [filteredStops, setFilteredStops] = useState([]);
+    const [selectedStop, setSelectedStop] = useState(null);
+    const [selectedShift, setSelectedShift] = useState("");
+    const [selectedDirection, setSelectedDirection] = useState("");
+    const [dropdownOpen, setDropdownOpen] = useState(false);
 
-    // Fetch all stops from the backend on component mount
+    const collectionMap = {
+        firstShift: { incoming: "firstshift", outgoing: "firstshift" },
+        adminMedical: { incoming: "admin_incoming", outgoing: "admin_outgoing" },
+        general: { incoming: "general_incoming", outgoing: "admin_outgoing" }
+    };
+
+    const contactDetails = {
+        KT: [{ name: "Maheshbhai", phone: "8200591172" }, { name: "Shaileshbhai", phone: "9979206491" }],
+        PT: [{ name: "Chetanbhai", phone: "9979720733" }]
+    };
+
     useEffect(() => {
         const fetchStops = async () => {
+            if (!selectedShift || !selectedDirection) return;
             try {
-                const response = await axios.get("http://localhost:5000/stops");
+                const collection = collectionMap[selectedShift][selectedDirection];
+                const response = await axios.get(`http://localhost:5000/stops?collection=${collection}`);
                 setStopsList(response.data.stops);
             } catch (error) {
                 console.error("❌ Error fetching stops:", error);
                 toast.error("Failed to fetch stops. Please try again later.");
             }
         };
-
         fetchStops();
-    }, []);
+    }, [selectedShift, selectedDirection]);
 
-    // Handle input change and show matching stops
     const handleInputChange = (e) => {
         const value = e.target.value.toLowerCase();
         setStop(value);
-        setSelectedStop(null); // Reset selection when typing
-
+        setSelectedStop(null);
         if (value.length > 1) {
-            // Only suggest stops when 2+ characters are typed
-            const filtered = stopsList.filter((stop) =>
-                stop.toLowerCase().includes(value)
-            );
+            const filtered = stopsList.filter(stop => stop.toLowerCase().includes(value));
             setFilteredStops(filtered);
         } else {
             setFilteredStops([]);
         }
     };
 
-    // Handle selection of a stop
     const handleStopSelection = (selected) => {
         setStop(selected);
         setSelectedStop(selected);
-        setFilteredStops([]); // Hide suggestions
+        setFilteredStops([]);
     };
 
-    // Search for buses only if a stop is selected
     const searchBuses = async () => {
-        if (!selectedStop) {
-            toast.error("Please select a stop from the suggestions.");
+        if (!selectedStop || !selectedShift || !selectedDirection) {
+            toast.error("Please select all filters and a stop");
             return;
         }
-
         try {
-            console.log(`🔍 Sending request to backend: /buses/${selectedStop}`);
-            const response = await axios.get(
-                `http://localhost:5000/buses/${encodeURIComponent(selectedStop)}`
-            );
-
-            console.log("✅ Response from backend:", response.data);
+            const collection = collectionMap[selectedShift][selectedDirection];
+            const response = await axios.get(`http://localhost:5000/buses/${encodeURIComponent(selectedStop)}?collection=${collection}`);
             setBuses(response.data.buses || []);
-
+            setStop("")
             if (response.data.buses && response.data.buses.length === 0) {
                 toast.warn("No buses found for this stop.");
             }
-
-            // Allow searching again
-            setSelectedStop(null); // Reset selection so a new stop can be picked
         } catch (error) {
             console.error("❌ Error fetching data from backend:", error);
             toast.error("Error fetching data. Check the backend!");
@@ -79,64 +79,88 @@ const BusSearch = () => {
     };
 
     return (
-    
-            <>
-                {/* Admin Login Button - Positioned at Top Right */}
-                <div className="admin-login-container">
-                    <button className="admin-login-button"><Link to="/login">Admin Login</Link></button>
-                </div>
-        
-                <div className="search-container">
-                    <h2>🚏 Find Buses by Stop Name</h2>
-                    <div className="search-input-container">
-                        <input
-                            type="text"
-                            className="search-input"
-                            placeholder="Enter stop name..."
-                            value={stop}
-                            onChange={handleInputChange}
-                            autoComplete="off"
-                        />
-                        {filteredStops.length > 0 && (
-                            <ul className="autocomplete-dropdown">
-                                {filteredStops.map((suggestion, index) => (
-                                    <li
-                                        key={index}
-                                        onClick={() => handleStopSelection(suggestion)}
-                                        className="suggestion-item"
-                                    >
-                                        {suggestion}
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
+        <div className="search-container">
+            <h2>🚏 Find Buses by Stop Name</h2>
+
+            {/* Custom Dropdown for Shift Selection */}
+            <div className="filter-section">
+                <div className="filter-group">
+                    <label>Select Shift:</label>
+                    <div className="custom-dropdown" onClick={() => setDropdownOpen(!dropdownOpen)}>
+                        {selectedShift ? selectedShift : "Choose Shift"}
+                        <ul className={`dropdown-options ${dropdownOpen ? "show" : ""}`}>
+                            <li onClick={() => { setSelectedShift("firstShift"); setDropdownOpen(false); }}>First Shift</li>
+                            <li onClick={() => { setSelectedShift("adminMedical"); setDropdownOpen(false); }}>ADM/Medical Shift</li>
+                            <li onClick={() => { setSelectedShift("general"); setDropdownOpen(false); }}>General Shift</li>
+                        </ul>
                     </div>
-        
-                    <button
-                        className="search-button"
-                        onClick={searchBuses}
-                        disabled={!selectedStop}
-                    >
-                        Search Buses
-                    </button>
-        
-                    <div className="search-results">
-                        {buses.length > 0 ? (
-                            buses.map((bus, index) => (
-                                <div key={index} className="result-item">
-                                    <h3>🚌 Bus: {bus}</h3>
-                                </div>
-                            ))
-                        ) : (
-                            <p className="no-results">No buses found for this stop.</p>
-                        )}
-                    </div>
-        
-                    <ToastContainer />
                 </div>
-            </>
-    
-        
+
+                {/* Direction Selection */}
+                <div className="filter-group">
+                    <label>Direction:</label>
+                    <div className="radio-group">
+                        <label>
+                            <input type="radio" value="incoming" checked={selectedDirection === "incoming"} onChange={() => setSelectedDirection("incoming")} disabled={!selectedShift} />
+                            Incoming
+                        </label>
+                        <label>
+                            <input type="radio" value="outgoing" checked={selectedDirection === "outgoing"} onChange={() => setSelectedDirection("outgoing")} disabled={!selectedShift} />
+                            Outgoing
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            {/* Search Input */}
+            <div className="search-input-container">
+                <input type="text" className="search-input" placeholder="Enter stop name..." value={stop} onChange={handleInputChange} disabled={!selectedShift || !selectedDirection} autoComplete="off" />
+                {filteredStops.length > 0 && (
+                    <ul className="autocomplete-dropdown">
+                        {filteredStops.map((suggestion, index) => (
+                            <li key={index} onClick={() => handleStopSelection(suggestion)} className="suggestion-item">
+                                {suggestion}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+
+            <button className="search-button" onClick={searchBuses} disabled={!selectedStop || !selectedShift || !selectedDirection}>
+                Search Buses
+            </button>
+
+            {/* Display search results */}
+            <div className="search-results">
+                {buses.length > 0 ? (
+                    buses.map((bus, index) => {
+                        const busType = bus.split(" - ")[0];
+                        const contacts = contactDetails[busType] || [];
+                        return (
+                            <div key={index} className="result-item">
+                                <h3>🚌 Bus: {bus}</h3>
+                                {contacts.length > 0 && (
+                                    <div className="contact-info">
+                                        <h4>📞 Contact:</h4>
+                                        <ul>
+                                            {contacts.map((contact, idx) => (
+                                                <li key={idx}>
+                                                    {contact.name}: <a href={`tel:${contact.phone}`}>{contact.phone}</a>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })
+                ) : (
+                    <p className="no-results">No buses found for this stop.</p>
+                )}
+            </div>
+
+            <ToastContainer />
+        </div>
     );
 };
 
