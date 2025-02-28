@@ -1,3 +1,4 @@
+/* App.css */
 #root {
   width: 100%;
   margin: 0 auto;
@@ -8,19 +9,47 @@
   align-items: center;
 }
 
-.main-content {
+.app-container {
   width: 100%;
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
 }
 
-/* Add smooth transitions */
-* {
-  transition: background-color 0.3s ease, color 0.3s ease;
+/* Navigation Bar */
+.navbar {
+  background-color: #2196F3;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
 }
 
-/* Improved input styling */
+.nav-link {
+  color: white;
+  text-decoration: none;
+  font-size: 1.1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.nav-link:hover {
+  background-color: #1976D2;
+}
+
+/* Card Layout */
+.card {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+/* Input Styling */
 input {
   width: 100%;
   padding: 1rem;
@@ -37,7 +66,7 @@ input:focus {
   box-shadow: 0 0 0 3px rgba(100, 108, 255, 0.1);
 }
 
-/* Status messages */
+/* Status Messages */
 .status-message {
   padding: 1rem;
   border-radius: 8px;
@@ -53,4 +82,65 @@ input:focus {
 .status-message.error {
   background: #ffebee;
   color: #c62828;
+}
+
+.login-container {
+  max-width: 400px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.role-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.role-selection label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-credentials {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.logout-button {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .nav-link {
+    width: 100%;
+    text-align: center;
+  }
+
+.card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  padding: 1.5rem; /* Reduce padding to minimize space */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  margin: 1rem auto; /* Reduce margin to minimize space */
+  max-width: 800px;
 }

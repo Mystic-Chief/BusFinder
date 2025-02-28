@@ -1,121 +1,73 @@
 const express = require("express");
-const { MongoClient } = require("mongodb");
 const cors = require("cors");
-const multer = require("multer");
-const path = require("path");
-const { exec } = require("child_process");
-const fs = require("fs");
+const mongoose = require("mongoose"); // Use Mongoose
+const { cleanupOldFiles } = require("./utils/fileUtils");
+const authRoutes = require("./routes/authRoutes");
+const busRoutes = require("./routes/busRoutes");
+const fileRoutes = require("./routes/fileRoutes");
+const tempEditRoutes = require("./routes/tempEditRoutes");
+const cookie = require("cookie-parser");
 
 const app = express();
-app.use(cors());
+
+const corsOptions = {
+  origin: [
+    "http://localhost:5173", // Development
+    "https://your-frontend-domain.com" // Production
+  ],
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization"]
+};
+
+app.use(cors(corsOptions));
+app.use(cookie());
 app.use(express.json());
 
-const UPLOADS_DIR = path.join(__dirname, "uploads");
+// Load environment variables
+require("dotenv").config();
 
-// Ensure uploads directory exists
-if (!fs.existsSync(UPLOADS_DIR)) {
-    fs.mkdirSync(UPLOADS_DIR);
-}
-
-// Configure Multer to handle file uploads
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, UPLOADS_DIR);
-    },
-    filename: (req, file, cb) => {
-        cb(null, `${Date.now()}-${file.originalname}`);
-    },
-});
-const upload = multer({ storage });
-
-// API to handle file upload and process with Python script
-app.post("/upload", upload.single("excelFile"), (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ success: false, message: "No file uploaded." });
-    }
-
-    const filePath = path.join(UPLOADS_DIR, req.file.filename);
-    console.log(`📂 File uploaded: ${filePath}`);
-
-    // Run the Python script with the uploaded file
-    const scriptPath = path.join(__dirname, "scripts", "process_pdf.py");
-    exec(`set PYTHONIOENCODING=utf-8 && python "${scriptPath}" "${filePath}"`, (error, stdout, stderr) => {
-
-        // Delete the file after processing
-        fs.unlink(filePath, (err) => {
-            if (err) console.error("⚠️ Error deleting file:", err);
-            else console.log("✅ File deleted after processing.");
+// Database connection using Mongoose
+const connectDB = async () => {
+    try {
+        await mongoose.connect(process.env.MONGO_URI, {
+            dbName: process.env.DATABASE_NAME
         });
-
-        if (error) {
-            console.error("❌ Python Script Error:", stderr);
-            return res.status(500).json({ success: false, message: "Error processing file.", error: stderr });
-        }
-
-        console.log("✅ Python Script Output:", stdout);
-        return res.json({ success: true, message: "File processed successfully.", output: stdout });
-    });
-});
-
-const MONGO_URI = "mongodb://localhost:27017/";
-const DATABASE_NAME = "BusFinder";
-const COLLECTION_NAME = "bus_routes";
-
-// Connect to MongoDB
-let db;
-MongoClient.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(client => {
-        db = client.db(DATABASE_NAME);
         console.log("✅ Connected to MongoDB");
-    })
-    .catch(error => console.error("❌ MongoDB Connection Error:", error));
+    } catch (error) {
+        console.error("❌ MongoDB connection error:", error);
+        process.exit(1); // Exit the process if the connection fails
+    }
+};
 
-// API to get buses by stop name (Case Insensitive)
-app.get("/buses/:stopName", async (req, res) => {
-    const stopName = req.params.stopName.toLowerCase(); // Convert input to lowercase
+// Start the server after connecting to the database
+const startServer = async () => {
+    await connectDB();
 
-    console.log(`🔍 Received request for stop: "${stopName}"`);
+    // Routes
+    app.use("/api/auth", authRoutes);
+    app.use("/api/bus", busRoutes);
+    app.use("/api/file", fileRoutes);
+    app.use("/api/temp-edit", tempEditRoutes);
 
-    try {
-        const collection = db.collection(COLLECTION_NAME);
-        console.log(`🔎 Running MongoDB query: { "Stops": "${stopName}" }`);
-
-        const buses = await collection.find(
-            { Stops: stopName } // Exact match search
-        ).toArray();
-
-        console.log("✅ MongoDB Query Result:", buses);
-
-        if (buses.length > 0) {
-            res.json({ buses: buses.map(bus => bus["Bus Code"]) });
-        } else {
-            res.json({ message: "No buses found for this stop." });
+    // Background tasks
+    setInterval(async () => {
+        try {
+            const tempCollection = mongoose.connection.db.collection("temp_changes");
+            const result = await tempCollection.deleteMany({
+                expiresAt: { $lt: new Date() }
+            });
+            console.log(`🧹 Cleaned up ${result.deletedCount} expired temporary changes`);
+        } catch (error) {
+            console.error("❌ Error cleaning temp changes:", error);
         }
-    } catch (error) {
-        console.error("❌ MongoDB Query Error:", error);
-        res.status(500).json({ error: "Internal Server Error" });
-    }
-});
+    }, 300000); // 5 minutes
 
-app.get("/stops", async (req, res) => {
-    try {
-        const collection = db.collection(COLLECTION_NAME);
+    // File cleanup every hour
+    setInterval(cleanupOldFiles, 60 * 60 * 1000);
 
-        // Aggregate all stops and return unique values
-        const stops = await collection.aggregate([
-            { $unwind: "$Stops" }, // Flatten stops array
-            { $group: { _id: "$Stops" } }, // Get unique stops
-            { $sort: { _id: 1 } } // Sort alphabetically
-        ]).toArray();
+    // Start the server
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+};
 
-        // Send the unique stops list
-        res.json({ stops: stops.map(s => s._id) });
-    } catch (error) {
-        console.error("❌ Error fetching stops:", error);
-        res.status(500).json({ error: "Internal Server Error" });
-    }
-});
-
-// Start server
-const PORT = 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+startServer();
