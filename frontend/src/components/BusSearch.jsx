@@ -18,8 +18,8 @@ const BusSearch = () => {
 
     // Automatically determine if today is Saturday
     const today = new Date();
-    // const isSaturday = today.getDay() === 6; // 0 = Sunday, 6 = Saturday
-    const isSaturday = true
+    const isSaturday = today.getDay() === 6; // 0 = Sunday, 6 = Saturday
+    //const isSaturday = true
 
     const location = useLocation();
     const showAdmin = ['/admin', '/temporary-edits'].includes(location.pathname);
