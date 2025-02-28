@@ -6,13 +6,17 @@ import "../components/AdminUpload.css";
 
 const AdminUpload = () => {
     const [files, setFiles] = useState({
-        firstShift: null,
+        firstShiftIncoming: null,
+        firstShiftOutgoing: null,
         adminIncoming: null,
         adminOutgoing: null,
-        generalIncoming: null
+        generalIncoming: null,
+        adminOutgoing1: null, // For Saturday's 1:15 PM Outgoing
+        adminOutgoing2: null, // For Saturday's 4:45 PM Outgoing
     });
     const [uploading, setUploading] = useState(false);
     const [progress, setProgress] = useState(0);
+    const [selectedDay, setSelectedDay] = useState('Monday-Friday'); // Default to Monday-Friday
 
     const handleFileChange = (category) => (e) => {
         const selectedFile = e.target.files[0];
@@ -23,97 +27,164 @@ const AdminUpload = () => {
         }
     };
 
+    const handleDayChange = (e) => {
+        setSelectedDay(e.target.value);
+        // Reset files when day changes
+        setFiles({
+            firstShiftIncoming: null,
+            firstShiftOutgoing: null,
+            adminIncoming: null,
+            adminOutgoing: null,
+            generalIncoming: null,
+            adminOutgoing1: null,
+            adminOutgoing2: null,
+        });
+    };
+
     const handleUpload = async () => {
-        const selectedFiles = Object.values(files).filter(Boolean);
+        const selectedFiles = Object.entries(files).filter(([_, file]) => file);
+
         if (selectedFiles.length === 0) {
             toast.error('Please select at least one file to upload!');
             return;
         }
 
         const formData = new FormData();
-        if (files.firstShift) {
-            formData.append('firstShiftIncoming', files.firstShift);
-            formData.append('firstShiftOutgoing', files.firstShift);
-        }
-        if (files.adminIncoming) formData.append('adminIncoming', files.adminIncoming);
-        if (files.adminOutgoing) formData.append('adminOutgoing', files.adminOutgoing);
-        if (files.generalIncoming) formData.append('generalIncoming', files.generalIncoming);
+
+        // Append only selected files
+        selectedFiles.forEach(([key, file]) => {
+            formData.append(key, file);
+        });
+
+        // Add the selected day to the form data
+        formData.append('day', selectedDay);
 
         try {
             setUploading(true);
-            await axios.post('http://localhost:5000/api/file/upload', formData, {
+            setProgress(0);
+
+            const response = await axios.post('http://localhost:5000/api/file/upload', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
                 onUploadProgress: (progressEvent) => {
-                    setProgress(Math.round((progressEvent.loaded * 100) / progressEvent.total));
+                    const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                    setProgress(percentCompleted);
                 },
             });
-            toast.success('All files processed successfully!');
+
+            toast.success('All files uploaded successfully!');
+
+            // Reset file state after upload
             setFiles({
-                firstShift: null,
+                firstShiftIncoming: null,
+                firstShiftOutgoing: null,
                 adminIncoming: null,
                 adminOutgoing: null,
-                generalIncoming: null
+                generalIncoming: null,
+                adminOutgoing1: null,
+                adminOutgoing2: null,
             });
         } catch (error) {
-            toast.error('Error processing files. Check console for details.');
+            console.error('File Upload Error:', error);
+            toast.error(error.response?.data?.message || 'Error processing files. Check console for details.');
         } finally {
             setUploading(false);
             setProgress(0);
         }
     };
 
+    const isSaturday = selectedDay === 'Saturday';
+
     return (
         <div className="admin-upload-container">
             <h2>Admin Shift Data Upload</h2>
-            
+
+            <div className="day-selector">
+                <label htmlFor="day">Select Day:</label>
+                <select id="day" value={selectedDay} onChange={handleDayChange}>
+                    <option value="Monday-Friday">Monday-Friday</option>
+                    <option value="Saturday">Saturday</option>
+                </select>
+            </div>
+
             <div className="upload-sections">
                 {/* First Shift Section */}
                 <div className="upload-section">
                     <h3>First Shift</h3>
-                    <FileUpload 
-                        id="firstShift"
-                        onChange={handleFileChange('firstShift')}
-                        file={files.firstShift}
-                        disabled={uploading}
-                    />
+                    <div className="sub-sections">
+                        <FileUpload
+                            id="firstShiftIncoming"
+                            label="Incoming"
+                            onChange={handleFileChange('firstShiftIncoming')}
+                            file={files.firstShiftIncoming}
+                            disabled={uploading}
+                        />
+                        <FileUpload
+                            id="firstShiftOutgoing"
+                            label="Outgoing"
+                            onChange={handleFileChange('firstShiftOutgoing')}
+                            file={files.firstShiftOutgoing}
+                            disabled={uploading}
+                        />
+                    </div>
                 </div>
 
                 {/* ADM/Medical Shift Section */}
                 <div className="upload-section">
                     <h3>ADM/Medical Shift</h3>
                     <div className="sub-sections">
-                        <FileUpload 
+                        <FileUpload
                             id="adminIncoming"
                             label="Incoming"
                             onChange={handleFileChange('adminIncoming')}
                             file={files.adminIncoming}
                             disabled={uploading}
                         />
-                        <FileUpload 
-                            id="adminOutgoing"
-                            label="Outgoing"
-                            onChange={handleFileChange('adminOutgoing')}
-                            file={files.adminOutgoing}
-                            disabled={uploading}
-                        />
+                        {!isSaturday ? (
+                            <FileUpload
+                                id="adminOutgoing"
+                                label="Outgoing"
+                                onChange={handleFileChange('adminOutgoing')}
+                                file={files.adminOutgoing}
+                                disabled={uploading}
+                            />
+                        ) : (
+                            <>
+                                <FileUpload
+                                    id="adminOutgoing1"
+                                    label="Outgoing (1:15 PM)"
+                                    onChange={handleFileChange('adminOutgoing1')}
+                                    file={files.adminOutgoing1}
+                                    disabled={uploading}
+                                />
+                                <FileUpload
+                                    id="adminOutgoing2"
+                                    label="Outgoing (4:45 PM)"
+                                    onChange={handleFileChange('adminOutgoing2')}
+                                    file={files.adminOutgoing2}
+                                    disabled={uploading}
+                                />
+                            </>
+                        )}
                     </div>
                 </div>
 
                 {/* General Shift Section */}
-                <div className="upload-section">
-                    <h3>General Shift</h3>
-                    <FileUpload 
-                        id="generalIncoming"
-                        label="Incoming"
-                        onChange={handleFileChange('generalIncoming')}
-                        file={files.generalIncoming}
-                        disabled={uploading}
-                    />
-                </div>
+                {!isSaturday && (
+                    <div className="upload-section">
+                        <h3>General Shift</h3>
+                        <FileUpload
+                            id="generalIncoming"
+                            label="Incoming"
+                            onChange={handleFileChange('generalIncoming')}
+                            file={files.generalIncoming}
+                            disabled={uploading}
+                        />
+                    </div>
+                )}
             </div>
 
-            <button 
-                onClick={handleUpload} 
+            <button
+                onClick={handleUpload}
                 disabled={uploading || !Object.values(files).some(Boolean)}
                 className="process-button"
             >

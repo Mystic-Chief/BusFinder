@@ -116,7 +116,7 @@ const saveTempEdit = async (req, res) => {
                     newBusNumber,
                     type,
                     stops,
-                    expiresAt: new Date(Date.now() + 7200000),
+                    expiresAt: new Date(Date.now() + 300000),
                     originalCollection: req.body.collection
                 }
             },

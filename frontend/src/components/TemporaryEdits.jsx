@@ -7,6 +7,7 @@ import '../components/TemporaryEdits.css';
 const TemporaryEdits = ({ userRole }) => {
     const [shift, setShift] = useState('');
     const [direction, setDirection] = useState('');
+    const [selectedTime, setSelectedTime] = useState(''); // For Saturday's outgoing times
     const [buses, setBuses] = useState([]);
     const [selectedStops, setSelectedStops] = useState({});
     const [newBusNumbers, setNewBusNumbers] = useState({});
@@ -14,10 +15,25 @@ const TemporaryEdits = ({ userRole }) => {
     const [searchType, setSearchType] = useState('busNumber');
     const [searchTerm, setSearchTerm] = useState('');
 
+    // Automatically determine if today is Saturday
+    const today = new Date();
+    const isSaturday = today.getDay() === 6; // 0 = Sunday, 6 = Saturday
+
+    // Collection mapping with Saturday support
     const collectionMap = {
-        firstShift: { incoming: 'firstshift_incoming', outgoing: 'firstshift_outgoing' },
-        adminMedical: { incoming: 'admin_incoming', outgoing: 'admin_outgoing' },
-        general: { incoming: 'general_incoming', outgoing: 'admin_outgoing' }
+        firstShift: { 
+            incoming: isSaturday ? 'firstshift_incoming_saturday' : 'firstshift_incoming',
+            outgoing: isSaturday ? 'firstshift_outgoing_saturday' : 'firstshift_outgoing'
+        },
+        adminMedical: { 
+            incoming: isSaturday ? 'admin_incoming_saturday' : 'admin_incoming',
+            outgoing1: 'admin_outgoing_1_15_saturday',
+            outgoing2: 'admin_outgoing_4_45_saturday'
+        },
+        general: { 
+            incoming: 'general_incoming',
+            outgoing: 'admin_outgoing'
+        }
     };
 
     useEffect(() => {
@@ -25,7 +41,15 @@ const TemporaryEdits = ({ userRole }) => {
             if (!shift || !direction) return;
 
             try {
-                const collection = collectionMap[shift][direction];
+                let collection;
+                if (isSaturday && shift === 'adminMedical' && direction === 'outgoing') {
+                    collection = selectedTime === '1:15 PM' 
+                        ? collectionMap.adminMedical.outgoing1 
+                        : collectionMap.adminMedical.outgoing2;
+                } else {
+                    collection = collectionMap[shift][direction];
+                }
+
                 const response = await axios.get(`http://localhost:5000/api/temp-edit/editable-data?collection=${collection}`);
                 let fetchedBuses = response.data.buses;
 
@@ -45,6 +69,7 @@ const TemporaryEdits = ({ userRole }) => {
                         return busPrefix === busType;
                     });
                 }
+
                 // Search filtering
                 if (searchTerm) {
                     const lowerSearch = searchTerm.toLowerCase();
@@ -63,7 +88,7 @@ const TemporaryEdits = ({ userRole }) => {
         };
 
         fetchData();
-    }, [shift, direction, refreshKey, searchTerm]);
+    }, [shift, direction, refreshKey, searchTerm, selectedTime, isSaturday]);
 
     // Normalize bus number input
     const normalizeBusNumber = (input) => {
@@ -152,6 +177,7 @@ const TemporaryEdits = ({ userRole }) => {
     return (
         <div className="temp-edit-container">
             <h2>Temporary Bus Number Changes</h2>
+            <h3>{isSaturday ? "Only For Saturday" : "For Monday to Friday"}</h3>
 
             {/* Shift/Direction Selector */}
             <div className="selector-container">
@@ -161,9 +187,18 @@ const TemporaryEdits = ({ userRole }) => {
                     className="shift-select"
                 >
                     <option value="">Select Shift</option>
-                    <option value="firstShift">First Shift</option>
-                    <option value="adminMedical">ADM/Medical</option>
-                    <option value="general">General</option>
+                    {isSaturday ? (
+                        <>
+                            <option value="firstShift">First Shift</option>
+                            <option value="adminMedical">ADM/Medical</option>
+                        </>
+                    ) : (
+                        <>
+                            <option value="firstShift">First Shift</option>
+                            <option value="adminMedical">ADM/Medical</option>
+                            <option value="general">General</option>
+                        </>
+                    )}
                 </select>
 
                 <div className="direction-radio">
@@ -186,6 +221,30 @@ const TemporaryEdits = ({ userRole }) => {
                         Outgoing
                     </label>
                 </div>
+
+                {/* Show time selection only for Saturday's Admin Outgoing */}
+                {isSaturday && shift === 'adminMedical' && direction === 'outgoing' && (
+                    <div className="time-radio">
+                        <label>
+                            <input
+                                type="radio"
+                                value="1:15 PM"
+                                checked={selectedTime === '1:15 PM'}
+                                onChange={() => setSelectedTime('1:15 PM')}
+                            />
+                            1:15 PM
+                        </label>
+                        <label>
+                            <input
+                                type="radio"
+                                value="4:45 PM"
+                                checked={selectedTime === '4:45 PM'}
+                                onChange={() => setSelectedTime('4:45 PM')}
+                            />
+                            4:45 PM
+                        </label>
+                    </div>
+                )}
             </div>
 
             {/* Conditional Search Controls */}

@@ -75,3 +75,17 @@
   background: #9E9E9E;
   cursor: not-allowed;
 }
+
+.day-selector {
+  margin-bottom: 20px;
+}
+
+.day-selector label {
+  margin-right: 10px;
+}
+
+.day-selector select {
+  padding: 5px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}

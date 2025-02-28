@@ -13,15 +13,32 @@ const BusSearch = () => {
     const [selectedStop, setSelectedStop] = useState(null);
     const [selectedShift, setSelectedShift] = useState("");
     const [selectedDirection, setSelectedDirection] = useState("");
+    const [selectedTime, setSelectedTime] = useState("");
     const [dropdownOpen, setDropdownOpen] = useState(false);
+
+    // Automatically determine if today is Saturday
+    const today = new Date();
+    // const isSaturday = today.getDay() === 6; // 0 = Sunday, 6 = Saturday
+    const isSaturday = true
 
     const location = useLocation();
     const showAdmin = ['/admin', '/temporary-edits'].includes(location.pathname);
 
     const collectionMap = {
-        firstShift: { incoming: "firstshift_incoming", outgoing: "firstshift_outgoing" },
-        adminMedical: { incoming: "admin_incoming", outgoing: "admin_outgoing" },
-        general: { incoming: "general_incoming", outgoing: "admin_outgoing" }
+        firstShift: {
+            incoming: isSaturday ? "firstshift_incoming_saturday" : "firstshift_incoming",
+            outgoing: isSaturday ? "firstshift_outgoing_saturday" : "firstshift_outgoing"
+        },
+        adminMedical: {
+            incoming: isSaturday ? "admin_incoming_saturday" : "admin_incoming",
+            outgoing: isSaturday ? "admin_outgoing_saturday" : "admin_outgoing", // Default outgoing for non-Saturday
+            outgoing1: "admin_outgoing_1_15_saturday", // Saturday-specific outgoing 1
+            outgoing2: "admin_outgoing_4_45_saturday"  // Saturday-specific outgoing 2
+        },
+        general: {
+            incoming: "general_incoming",
+            outgoing: "admin_outgoing"
+        }
     };
 
     const contactDetails = {
@@ -38,11 +55,23 @@ const BusSearch = () => {
         return input;
     }
 
+    // Fetch stops logic
     useEffect(() => {
         const fetchStops = async () => {
             if (!selectedShift || !selectedDirection) return;
+
             try {
-                const collection = collectionMap[selectedShift][selectedDirection];
+                let collection;
+                if (isSaturday && selectedShift === "adminMedical" && selectedDirection === "outgoing") {
+                    // Handle Saturday's Admin Outgoing with two options
+                    collection = selectedTime === "1:15 PM"
+                        ? collectionMap.adminMedical.outgoing1
+                        : collectionMap.adminMedical.outgoing2;
+                } else {
+                    // Handle all other cases
+                    collection = collectionMap[selectedShift][selectedDirection];
+                }
+
                 const response = await axios.get(`http://localhost:5000/api/bus/stops?collection=${collection}`);
                 setStopsList(response.data.stops);
             } catch (error) {
@@ -50,8 +79,9 @@ const BusSearch = () => {
                 toast.error("Failed to fetch stops. Please try again later.");
             }
         };
+
         fetchStops();
-    }, [selectedShift, selectedDirection]);
+    }, [selectedShift, selectedDirection, selectedTime, isSaturday]);
 
     const handleInputChange = (e) => {
         const value = e.target.value.toLowerCase();
@@ -78,11 +108,23 @@ const BusSearch = () => {
             toast.error("Please select all filters and a stop");
             return;
         }
+
         try {
-            const collection = collectionMap[selectedShift][selectedDirection];
+            let collection;
+            if (isSaturday && selectedShift === "adminMedical" && selectedDirection === "outgoing") {
+                // Handle Saturday's Admin Outgoing with two options
+                collection = selectedTime === "1:15 PM"
+                    ? collectionMap.adminMedical.outgoing1
+                    : collectionMap.adminMedical.outgoing2;
+            } else {
+                // Handle all other cases
+                collection = collectionMap[selectedShift][selectedDirection];
+            }
+
             const response = await axios.get(`http://localhost:5000/api/bus/buses/${encodeURIComponent(selectedStop)}?collection=${collection}`);
             setBuses(response.data.buses || []);
             setStop("");
+
             if (response.data.buses && response.data.buses.length === 0) {
                 toast.warn("No buses found for this stop.");
             }
@@ -93,13 +135,15 @@ const BusSearch = () => {
     };
 
     return (
-        <>{showAdmin && (
-            <div className="btn">
-                <Link to="/login"><button>Admin Login</button></Link>
-            </div>
-        )}
+        <>
+            {showAdmin && (
+                <div className="btn">
+                    <Link to="/login"><button>Admin Login</button></Link>
+                </div>
+            )}
             <div className="search-container">
                 <h2>🚏 Find Buses by Stop Name</h2>
+                <h3>{isSaturday ? "Only For Saturday" : "For Monday to Friday"}</h3>
 
                 {/* Custom Dropdown for Shift Selection */}
                 <div className="filter-section">
@@ -111,30 +155,29 @@ const BusSearch = () => {
                         >
                             {selectedShift ? selectedShift : "Choose Shift"}
                             <ul className={`dropdown-options ${dropdownOpen ? "show" : ""}`}>
-                                <li
-                                    onClick={() => {
-                                        setSelectedShift("firstShift");
-                                        setDropdownOpen(false);
-                                    }}
-                                >
-                                    First Shift
-                                </li>
-                                <li
-                                    onClick={() => {
-                                        setSelectedShift("adminMedical");
-                                        setDropdownOpen(false);
-                                    }}
-                                >
-                                    ADM/Medical Shift
-                                </li>
-                                <li
-                                    onClick={() => {
-                                        setSelectedShift("general");
-                                        setDropdownOpen(false);
-                                    }}
-                                >
-                                    General Shift
-                                </li>
+                                {/* Show different shifts based on day */}
+                                {isSaturday ? (
+                                    <>
+                                        <li onClick={() => setSelectedShift("firstShift")}>
+                                            First Shift
+                                        </li>
+                                        <li onClick={() => setSelectedShift("adminMedical")}>
+                                            ADM/Medical Shift
+                                        </li>
+                                    </>
+                                ) : (
+                                    <>
+                                        <li onClick={() => setSelectedShift("firstShift")}>
+                                            First Shift
+                                        </li>
+                                        <li onClick={() => setSelectedShift("adminMedical")}>
+                                            ADM/Medical Shift
+                                        </li>
+                                        <li onClick={() => setSelectedShift("general")}>
+                                            General Shift
+                                        </li>
+                                    </>
+                                )}
                             </ul>
                         </div>
                     </div>
@@ -165,6 +208,33 @@ const BusSearch = () => {
                             </label>
                         </div>
                     </div>
+
+                    {/* Show time selection only for Saturday's Admin Outgoing */}
+                    {isSaturday && selectedShift === "adminMedical" && selectedDirection === "outgoing" && (
+                        <div className="filter-group">
+                            <label>Select Time:</label>
+                            <div className="radio-group">
+                                <label>
+                                    <input
+                                        type="radio"
+                                        value="1:15 PM"
+                                        checked={selectedTime === "1:15 PM"}
+                                        onChange={() => setSelectedTime("1:15 PM")}
+                                    />
+                                    1:15 PM
+                                </label>
+                                <label>
+                                    <input
+                                        type="radio"
+                                        value="4:45 PM"
+                                        checked={selectedTime === "4:45 PM"}
+                                        onChange={() => setSelectedTime("4:45 PM")}
+                                    />
+                                    4:45 PM
+                                </label>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Search Input */}
@@ -205,17 +275,13 @@ const BusSearch = () => {
                 <div className="search-results">
                     {buses.length > 0 ? (
                         buses.map((bus, index) => {
-                            // Extract bus type from the original bus number
                             const busType = bus.originalBusNumber.split(" - ")[0];
-                            const contactKey = getContactKey(busType); // Use getContactKey to handle "PU" case
+                            const contactKey = getContactKey(busType);
                             const contacts = contactDetails[contactKey] || [];
 
                             return (
                                 <div key={index} className="result-item">
-                                    {/* Display the formatted message */}
                                     <h3>🚌 {bus.message}</h3>
-
-                                    {/* Display contact information if available */}
                                     {contacts.length > 0 && (
                                         <div className="contact-info">
                                             <h4>📞 Contact:</h4>

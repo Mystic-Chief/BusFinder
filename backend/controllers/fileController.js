@@ -26,7 +26,9 @@ const upload = multer({
     { name: "firstShiftOutgoing", maxCount: 1 },
     { name: "adminIncoming", maxCount: 1 },
     { name: "adminOutgoing", maxCount: 1 },
-    { name: "generalIncoming", maxCount: 1 }
+    { name: "generalIncoming", maxCount: 1 },
+    { name: "adminOutgoing1", maxCount: 1 }, // For Saturday's 1:15 PM Outgoing
+    { name: "adminOutgoing2", maxCount: 1 }  // For Saturday's 4:45 PM Outgoing
 ]);
 
 const handleFileUpload = async (req, res) => {
@@ -52,12 +54,16 @@ const handleFileUpload = async (req, res) => {
             });
         }
 
+        // Get the selected day from the request body
+        const day = req.body.day || "Monday-Friday"; // Default to Monday-Friday
+        const isSaturday = day === "Saturday";
+
         const filesToDelete = new Set();
         const processingResults = [];
 
         for (const [field, files] of Object.entries(req.files)) {
             const file = files[0];
-            const collection = mapFieldToCollection(field);
+            const collection = mapFieldToCollection(field, day); // Pass the day parameter
             
             if (!collection) {
                 console.warn(`⚠️ No collection mapped for field: ${field}`);
@@ -65,7 +71,12 @@ const handleFileUpload = async (req, res) => {
             }
 
             await processFile(file, collection);
-            processingResults.push({ collection, status: "Processed" });
+            processingResults.push({ 
+                field, 
+                collection, 
+                status: "Processed", 
+                day 
+            });
             filesToDelete.add(file.filename);
         }
 
