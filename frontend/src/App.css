@@ -133,6 +133,7 @@ input:focus {
     width: 100%;
     text-align: center;
   }
+}
 
 .card {
   background: rgba(255, 255, 255, 0.95);

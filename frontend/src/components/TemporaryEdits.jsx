@@ -4,6 +4,8 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../components/TemporaryEdits.css';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const TemporaryEdits = ({ userRole }) => {
     const [shift, setShift] = useState('');
     const [direction, setDirection] = useState('');
@@ -18,6 +20,7 @@ const TemporaryEdits = ({ userRole }) => {
     // Automatically determine if today is Saturday
     const today = new Date();
     const isSaturday = today.getDay() === 6; // 0 = Sunday, 6 = Saturday
+    //const isSaturday = false
 
     // Collection mapping with Saturday support
     const collectionMap = {
@@ -50,7 +53,7 @@ const TemporaryEdits = ({ userRole }) => {
                     collection = collectionMap[shift][direction];
                 }
 
-                const response = await axios.get(`http://localhost:5000/api/temp-edit/editable-data?collection=${collection}`);
+                const response = await axios.get(`${API_BASE_URL}/api/temp-edit/editable-data?collection=${collection}`);
                 let fetchedBuses = response.data.buses;
 
                 // Role-based filtering
@@ -133,7 +136,7 @@ const TemporaryEdits = ({ userRole }) => {
         if (!newNumber) return;
 
         try {
-            await axios.post('http://localhost:5000/api/temp-edit/temp-edit', {
+            await axios.post(`${API_BASE_URL}/api/temp-edit/temp-edit`, {
                 type: 'bulk',
                 busId,
                 newBusNumber: newNumber,
@@ -156,7 +159,7 @@ const TemporaryEdits = ({ userRole }) => {
         try {
             const bus = buses.find(b => b._id === busId);
 
-            await axios.post('http://localhost:5000/api/temp-edit/temp-edit', {
+            await axios.post(`${API_BASE_URL}/api/temp-edit/temp-edit`, {
                 type: 'partial',
                 busId,
                 newBusNumber: newNumber,

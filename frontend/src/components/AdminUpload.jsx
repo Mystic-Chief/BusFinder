@@ -4,6 +4,8 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import "../components/AdminUpload.css";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const AdminUpload = () => {
     const [files, setFiles] = useState({
         firstShiftIncoming: null,
@@ -63,7 +65,7 @@ const AdminUpload = () => {
             setUploading(true);
             setProgress(0);
 
-            const response = await axios.post('http://localhost:5000/api/file/upload', formData, {
+            const response = await axios.post(`${API_BASE_URL}/api/file/upload`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
                 onUploadProgress: (progressEvent) => {
                     const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);

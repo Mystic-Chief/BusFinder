@@ -5,6 +5,8 @@ import { Link, useLocation } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 import "../components/BusSearch.css";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const BusSearch = () => {
     const [stop, setStop] = useState("");
     const [buses, setBuses] = useState([]);
@@ -18,8 +20,8 @@ const BusSearch = () => {
 
     // Automatically determine if today is Saturday
     const today = new Date();
-    // const isSaturday = today.getDay() === 6; // 0 = Sunday, 6 = Saturday
-    const isSaturday = true
+    const isSaturday = today.getDay() === 6; // 0 = Sunday, 6 = Saturday
+    //const isSaturday = false
 
     const location = useLocation();
     const showAdmin = ['/admin', '/temporary-edits'].includes(location.pathname);
@@ -72,7 +74,7 @@ const BusSearch = () => {
                     collection = collectionMap[selectedShift][selectedDirection];
                 }
 
-                const response = await axios.get(`http://localhost:5000/api/bus/stops?collection=${collection}`);
+                const response = await axios.get(`${API_BASE_URL}/api/bus/stops?collection=${collection}`);
                 setStopsList(response.data.stops);
             } catch (error) {
                 console.error("❌ Error fetching stops:", error);
@@ -121,7 +123,7 @@ const BusSearch = () => {
                 collection = collectionMap[selectedShift][selectedDirection];
             }
 
-            const response = await axios.get(`http://localhost:5000/api/bus/buses/${encodeURIComponent(selectedStop)}?collection=${collection}`);
+            const response = await axios.get(`${API_BASE_URL}/api/bus/buses/${encodeURIComponent(selectedStop)}?collection=${collection}`);
             setBuses(response.data.buses || []);
             setStop("");
 
@@ -133,7 +135,7 @@ const BusSearch = () => {
             toast.error("Error fetching data. Check the backend!");
         }
     };
-
+    
     return (
         <>
             {showAdmin && (

@@ -7,6 +7,9 @@ import Navbar from './components/NavBar';
 import Login from './components/Login';
 import './App.css';
 import axios from 'axios';
+import ErrorBoundary from './components/ErrorBoundary';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const App = () => {
     const [loggedInUser, setLoggedInUser] = useState(null);
@@ -15,7 +18,7 @@ const App = () => {
     useEffect(() => {
         const validateToken = async () => {
             try {
-                const response = await axios.get('http://localhost:5000/api/auth/validate-token', {
+                const response = await axios.get(`${API_BASE_URL}/api/auth/validate-token`, {
                     withCredentials: true
                 });
 
@@ -40,16 +43,18 @@ const App = () => {
     }
 
     return (
-        <Router>
-            <Navbar loggedInUser={loggedInUser} setLoggedInUser={setLoggedInUser} /> {/* ✅ Use Navbar component */}
+        <ErrorBoundary>
+            <Router>
+                <Navbar loggedInUser={loggedInUser} setLoggedInUser={setLoggedInUser} /> {/* ✅ Use Navbar component */}
 
-            <Routes>
-                <Route path="/" element={<BusSearch />} />
-                <Route path="/admin" element={<ProtectedRoute user={loggedInUser} allowedRoles={['admin']}><AdminUpload /></ProtectedRoute>} />
-                <Route path="/temporary-edits" element={<ProtectedRoute user={loggedInUser} allowedRoles={['admin', 'kt-supervisor', 'pt-supervisor']}><TemporaryEdits userRole={loggedInUser?.role} /></ProtectedRoute>} />
-                <Route path="/login" element={<Login setLoggedInUser={setLoggedInUser} />} />
-            </Routes>
-        </Router>
+                <Routes>
+                    <Route path="/" element={<BusSearch />} />
+                    <Route path="/admin" element={<ProtectedRoute user={loggedInUser} allowedRoles={['admin']}><AdminUpload /></ProtectedRoute>} />
+                    <Route path="/temporary-edits" element={<ProtectedRoute user={loggedInUser} allowedRoles={['admin', 'kt-supervisor', 'pt-supervisor']}><TemporaryEdits userRole={loggedInUser?.role} /></ProtectedRoute>} />
+                    <Route path="/login" element={<Login setLoggedInUser={setLoggedInUser} />} />
+                </Routes>
+            </Router>
+        </ErrorBoundary>
     );
 };
 
