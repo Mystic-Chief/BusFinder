@@ -2,6 +2,7 @@ const Admin = require("../models/Admin");
 const jwt = require("jsonwebtoken");
 const cookie = require("cookie-parser");
 const bcrypt = require("bcrypt");
+const { validationResult } = require("express-validator");
 require("dotenv").config({ path: `.env.${process.env.NODE_ENV}` });
 
 const secretKey = process.env.JWT_SECRET;
@@ -44,6 +45,12 @@ const createDefaultAdmin = async () => {
 };
 
 const handleLogin = async (req, res) => {
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, message: "Invalid input" });
+    }
+
     try {
         const user = await Admin.findOne({ username: req.body.username });
         

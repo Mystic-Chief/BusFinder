@@ -59,11 +59,17 @@ const App = () => {
 };
 
 const ProtectedRoute = ({ user, children, allowedRoles = [] }) => {
-    if (user && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+    if (!user) {
+        // 🔴 Redirect to home if user is not authenticated
+        return <Navigate to="/" replace />;
+    }
+    if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+        // 🔴 Redirect unauthorized users to home
         return <Navigate to="/" replace />;
     }
     return children;
 };
+
 
 axios.defaults.withCredentials = true;
 
