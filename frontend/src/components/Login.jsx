@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import "../components/Login.css";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const Login = ({ setLoggedInUser }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -17,7 +19,7 @@ const Login = ({ setLoggedInUser }) => {
 
         try {
             const response = await axios.post(
-                'http://localhost:5000/api/auth/login', 
+                `${API_BASE_URL}/api/auth/login`, 
                 { username, password },
                 { withCredentials: true }
             );

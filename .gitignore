@@ -33,3 +33,6 @@ npm-debug.log
 yarn-error.log
 package-lock.json
 .env
+.env.development
+.env.production
+.env.database

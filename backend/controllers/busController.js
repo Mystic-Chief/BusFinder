@@ -97,7 +97,11 @@ const getBuses = async (req, res) => {
                 newBusNumber: finalBusNumber,
                 expiresAt: expiresAt ? expiresAt.toISOString() : null,
                 message: changes.length > 0
-                    ? `Bus: ${finalBusNumber} instead of ${bus["Bus Code"]} until ${expiresAt.toLocaleDateString()}`
+                    ? `Bus: ${finalBusNumber} instead of ${bus["Bus Code"]} for ${expiresAt.toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    })}`
                     : `Bus: ${bus["Bus Code"]}`
             };
 

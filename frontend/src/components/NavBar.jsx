@@ -2,12 +2,14 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const Navbar = ({ loggedInUser, setLoggedInUser }) => {
     const navigate = useNavigate(); // ✅ useNavigate() now works inside <Router>
 
     const handleLogout = async () => {
         try {
-            await axios.post("http://localhost:5000/api/auth/logout", {}, { withCredentials: true });
+            await axios.post(`${API_BASE_URL}/api/auth/logout`, {}, { withCredentials: true });
             setLoggedInUser(null);
             navigate("/"); // ✅ Redirect to home page (Bus Search)
         } catch (err) {
