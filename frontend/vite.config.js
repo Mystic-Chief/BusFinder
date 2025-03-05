@@ -8,6 +8,10 @@ export default defineConfig(({ mode }) => {
       'process.env.NODE_ENV': JSON.stringify(mode === 'production' ? 'production' : 'development')
     },
     plugins: [react()],
+    server: {
+      host: "0.0.0.0", 
+      port: 5173
+    },
     build: {
       minify: 'terser',
       terserOptions: {

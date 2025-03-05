@@ -16,7 +16,7 @@ services:
     build: ./frontend
     container_name: frontend
     ports:
-      - "3000:3000"
+      - "3000:5173"
     env_file:
       - ./frontend/.env.production  
     depends_on:

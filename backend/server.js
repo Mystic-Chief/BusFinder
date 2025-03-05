@@ -133,27 +133,33 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   await connectDB();
 
-  const PORT = process.env.PORT;
+  const PORT = process.env.PORT || 5000;
 
-  if (process.env.NODE_ENV === "production") {
-    // HTTPS in production
-    const httpsServer = https.createServer(
-      {
-        key: fs.readFileSync("/certs/key.pem"),
-        cert: fs.readFileSync("/certs/cert.pem"),
-      },
-      app
-    );
+//   if (process.env.NODE_ENV === "production") {
+//     // HTTPS in production
+//     const httpsServer = https.createServer(
+//       {
+//         key: fs.readFileSync("/certs/key.pem"),
+//         cert: fs.readFileSync("/certs/cert.pem"),
+//       },
+//       app
+//     );
 
-    httpsServer.listen(PORT, () => {
-      logger.info(`🚀 HTTPS server running on port ${PORT}`);
-    });
-  } else {
-    // HTTP in development
-    app.listen(PORT, () => {
-      logger.info(`🚀 HTTP server running on port ${PORT}`);
-    });
-  }
+//     httpsServer.listen(PORT, () => {
+//       logger.info(`🚀 HTTPS server running on port ${PORT}`);
+//     });
+//   } else {
+//     // HTTP in development
+//     app.listen(PORT, () => {
+//       logger.info(`🚀 HTTP server running on port ${PORT}`);
+//     });
+//   }
+// };
+
+  app.listen(PORT, "0.0.0.0", () => {
+      logger.info(`🚀 Server running on port ${PORT}`);
+  });
+
 };
 
 // Graceful shutdown
