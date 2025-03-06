@@ -7,6 +7,7 @@ const busRoutes = require("./routes/busRoutes");
 const fileRoutes = require("./routes/fileRoutes");
 const tempEditRoutes = require("./routes/tempEditRoutes");
 const { createDefaultAdmin } = require("./controllers/authController");
+const examRoutes = require("./routes/examRoutes")
 const cookie = require("cookie-parser");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
@@ -106,6 +107,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/bus", busRoutes);
 app.use("/api/file", fileRoutes);
 app.use("/api/temp-edit", tempEditRoutes);
+app.use("/api/exam", examRoutes);
 
 // Background tasks
 setInterval(async () => {

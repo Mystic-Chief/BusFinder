@@ -117,10 +117,13 @@ h2 {
 
 /* Style radio buttons */
 .radio-group input[type="radio"] {
-    width: 1.5rem; /* Increased size */
+    width: 1.5rem;
+    /* Increased size */
     height: 1.5rem;
-    accent-color: #646cff; /* Blue when selected */
-    background-color: white; /* White default */
+    accent-color: #646cff;
+    /* Blue when selected */
+    background-color: white;
+    /* White default */
     border: 2px solid #ddd;
     cursor: pointer;
 }
@@ -300,6 +303,63 @@ h2 {
     position: relative;
 }
 
+.dropdown-divider {
+    padding: 8px 10px;
+    color: #777;
+    font-size: 0.9em;
+    font-weight: 600;
+    background-color: #f5f5f5;
+    border-top: 1px solid #e5e5e5;
+    border-bottom: 1px solid #e5e5e5;
+    cursor: default;
+}
+
+.exam-option {
+    padding-left: 15px;
+}
+
+/* Add these styles to your existing BusSearch.css file */
+
+/* Exam option styling */
+.exam-option {
+    padding: 8px 12px;
+}
+
+.available-exam {
+    color: #008000;
+    /* Green color for available exams */
+    font-weight: 500;
+}
+
+.upcoming-exam {
+    color: #808080;
+    /* Gray color for upcoming exams */
+}
+
+.availability-indicator {
+    font-size: 0.85em;
+    font-style: italic;
+}
+
+/* Warning message styling */
+.exam-not-available {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 10px 15px;
+    margin: 10px 0;
+    border-radius: 4px;
+}
+
+.exam-not-available p {
+    margin: 0;
+    color: #856404;
+}
+
+/* Fix for the dropdown to ensure scroll if there are many exams */
+.dropdown-options {
+    max-height: 300px;
+    overflow-y: auto;
+}
 
 /* Responsive Design */
 @media (max-width: 768px) {
@@ -327,7 +387,8 @@ h2 {
     .result-item h3 {
         font-size: 1.1rem;
     }
-    .admin-login-button{
+
+    .admin-login-button {
         display: none;
     }
 }

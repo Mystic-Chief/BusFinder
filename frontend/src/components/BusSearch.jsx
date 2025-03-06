@@ -17,11 +17,13 @@ const BusSearch = () => {
     const [selectedDirection, setSelectedDirection] = useState("");
     const [selectedTime, setSelectedTime] = useState("");
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [examSchedules, setExamSchedules] = useState([]);
+    const [selectedExam, setSelectedExam] = useState(null);
+    const [examAvailable, setExamAvailable] = useState(false);
 
     // Automatically determine if today is Saturday
     const today = new Date();
     const isSaturday = today.getDay() === 6; // 0 = Sunday, 6 = Saturday
-    //const isSaturday = false
 
     const location = useLocation();
     const showAdmin = ['/admin', '/temporary-edits'].includes(location.pathname);
@@ -40,6 +42,10 @@ const BusSearch = () => {
         general: {
             incoming: "general_incoming",
             outgoing: "admin_outgoing"
+        },
+        exam: {
+            incoming: "exam_schedules",
+            outgoing: "exam_schedules"
         }
     };
 
@@ -48,14 +54,43 @@ const BusSearch = () => {
         PT: [{ name: "Chetanbhai", phone: "9979720733" }]
     };
 
-    // Function to get the correct contact key
-    function getContactKey(input) {
-        input = input.toUpperCase();
-        if (input.startsWith("PU")) {
-            return "KT";
+    // Helper function to check if an exam is available for searching
+    const isExamAvailable = (exam) => {
+        if (!exam) return false;
+
+        const now = new Date();
+        const startDate = new Date(exam.startDate);
+        const endDate = new Date(exam.endDate);
+
+        // Exam schedule is available from one day before the start date
+        const availableFrom = new Date(startDate);
+        availableFrom.setDate(startDate.getDate() - 1);
+
+        return now >= availableFrom && now <= endDate;
+    };
+
+    // Fetch all exam schedules, not just active ones
+    useEffect(() => {
+        const fetchExamSchedules = async () => {
+            try {
+                // Using the new endpoint to get all exams
+                const response = await axios.get(`${API_BASE_URL}/api/exam/all`);
+                setExamSchedules(response.data);
+            } catch (error) {
+                console.error("❌ Error fetching exam schedules:", error);
+                toast.error("Failed to fetch exam schedules.");
+            }
+        };
+
+        fetchExamSchedules();
+    }, []);
+
+    // Check if the selected exam schedule is available - date check for availability
+    useEffect(() => {
+        if (selectedExam) {
+            setExamAvailable(isExamAvailable(selectedExam));
         }
-        return input;
-    }
+    }, [selectedExam]);
 
     // Fetch stops logic
     useEffect(() => {
@@ -64,7 +99,11 @@ const BusSearch = () => {
 
             try {
                 let collection;
-                if (isSaturday && selectedShift === "adminMedical" && selectedDirection === "outgoing") {
+
+                // Use simple logic - if shift is "exam", use exam collection
+                if (selectedShift === "exam") {
+                    collection = collectionMap.exam[selectedDirection];
+                } else if (isSaturday && selectedShift === "adminMedical" && selectedDirection === "outgoing") {
                     // Handle Saturday's Admin Outgoing with two options
                     collection = selectedTime === "1:15 PM"
                         ? collectionMap.adminMedical.outgoing1
@@ -105,15 +144,37 @@ const BusSearch = () => {
         setFilteredStops([]);
     };
 
+    // Handle selection of a regular shift
+    const handleRegularShiftSelection = (shift) => {
+        setSelectedShift(shift);
+        setSelectedExam(null);
+        setDropdownOpen(false);
+    };
+
+    // Handle selection of an exam
+    const handleExamSelection = (exam) => {
+        setSelectedExam(exam);
+        setSelectedShift("exam"); // Keep using "exam" as the shift value for backend compatibility
+        setDropdownOpen(false);
+    };
+
     const searchBuses = async () => {
         if (!selectedStop || !selectedShift || !selectedDirection) {
             toast.error("Please select all filters and a stop");
             return;
         }
 
+        // If exam is selected but not available, show a warning
+        if (selectedShift === "exam" && !examAvailable) {
+            toast.warn("Selected exam schedule is not yet available");
+            return;
+        }
+
         try {
             let collection;
-            if (isSaturday && selectedShift === "adminMedical" && selectedDirection === "outgoing") {
+            if (selectedShift === "exam") {
+                collection = collectionMap.exam[selectedDirection];
+            } else if (isSaturday && selectedShift === "adminMedical" && selectedDirection === "outgoing") {
                 // Handle Saturday's Admin Outgoing with two options
                 collection = selectedTime === "1:15 PM"
                     ? collectionMap.adminMedical.outgoing1
@@ -135,7 +196,31 @@ const BusSearch = () => {
             toast.error("Error fetching data. Check the backend!");
         }
     };
-    
+
+    // Helper function to get the display name for the selected shift
+    const getShiftDisplayName = () => {
+        if (!selectedShift) return "Choose Shift";
+
+        if (selectedShift === "exam" && selectedExam) {
+            return `Exam: ${selectedExam.examTitle}`;
+        }
+
+        const shiftNames = {
+            firstShift: "First Shift",
+            adminMedical: "ADM/Medical Shift",
+            general: "General Shift"
+        };
+
+        return shiftNames[selectedShift] || selectedShift;
+    };
+
+    // Helper function to determine contact key
+    const getContactKey = (busType) => {
+        if (busType && busType.includes("KT")) return "KT";
+        if (busType && busType.includes("PT")) return "PT";
+        return null;
+    };
+
     return (
         <>
             {showAdmin && (
@@ -147,69 +232,103 @@ const BusSearch = () => {
                 <h2>🚏 Find Buses by Stop Name</h2>
                 <h3>{isSaturday ? "Only For Saturday" : "For Monday to Friday"}</h3>
 
-                {/* Custom Dropdown for Shift Selection */}
+                {/* Filters Section */}
                 <div className="filter-section">
+                    {/* Integrated Dropdown for Shift Selection */}
                     <div className="filter-group">
                         <label>Select Shift:</label>
                         <div
                             className="custom-dropdown"
                             onClick={() => setDropdownOpen(!dropdownOpen)}
                         >
-                            {selectedShift ? selectedShift : "Choose Shift"}
+                            {getShiftDisplayName()}
                             <ul className={`dropdown-options ${dropdownOpen ? "show" : ""}`}>
-                                {/* Show different shifts based on day */}
+                                {/* Standard shifts */}
                                 {isSaturday ? (
                                     <>
-                                        <li onClick={() => setSelectedShift("firstShift")}>
+                                        <li onClick={() => handleRegularShiftSelection("firstShift")}>
                                             First Shift
                                         </li>
-                                        <li onClick={() => setSelectedShift("adminMedical")}>
+                                        <li onClick={() => handleRegularShiftSelection("adminMedical")}>
                                             ADM/Medical Shift
                                         </li>
                                     </>
                                 ) : (
                                     <>
-                                        <li onClick={() => setSelectedShift("firstShift")}>
+                                        <li onClick={() => handleRegularShiftSelection("firstShift")}>
                                             First Shift
                                         </li>
-                                        <li onClick={() => setSelectedShift("adminMedical")}>
+                                        <li onClick={() => handleRegularShiftSelection("adminMedical")}>
                                             ADM/Medical Shift
                                         </li>
-                                        <li onClick={() => setSelectedShift("general")}>
+                                        <li onClick={() => handleRegularShiftSelection("general")}>
                                             General Shift
                                         </li>
+                                    </>
+                                )}
+
+                                {/* Exam options integrated directly into the dropdown */}
+                                {examSchedules.length > 0 && (
+                                    <>
+                                        <li className="dropdown-divider">Exam Schedules</li>
+                                        {examSchedules.map((exam) => {
+                                            const examIsAvailable = isExamAvailable(exam);
+                                            return (
+                                                <li
+                                                    key={exam._id}
+                                                    onClick={() => handleExamSelection(exam)}
+                                                    className={`exam-option ${examIsAvailable ? 'available-exam' : 'upcoming-exam'}`}
+                                                >
+                                                    {exam.examTitle}
+                                                    {!examIsAvailable && <span className="availability-indicator"> (Upcoming)</span>}
+                                                </li>
+                                            );
+                                        })}
                                     </>
                                 )}
                             </ul>
                         </div>
                     </div>
 
-                    {/* Direction Selection */}
-                    <div className="filter-group">
-                        <label>Direction:</label>
-                        <div className="radio-group">
-                            <label>
-                                <input
-                                    type="radio"
-                                    value="incoming"
-                                    checked={selectedDirection === "incoming"}
-                                    onChange={() => setSelectedDirection("incoming")}
-                                    disabled={!selectedShift}
-                                />
-                                Incoming
-                            </label>
-                            <label>
-                                <input
-                                    type="radio"
-                                    value="outgoing"
-                                    checked={selectedDirection === "outgoing"}
-                                    onChange={() => setSelectedDirection("outgoing")}
-                                    disabled={!selectedShift}
-                                />
-                                Outgoing
-                            </label>
+                    {/* Show exam availability warning if exam is selected but not available */}
+                    {selectedExam && !examAvailable && (
+                        <div className="exam-not-available">
+                            <p>
+                                <i className="fas fa-info-circle"></i> Exam schedule will be available for searching from{" "}
+                                <strong>{selectedExam.availableFromFormatted}</strong>.
+                                The bus search will be disabled until then.
+                            </p>
                         </div>
-                    </div>
+                    )}
+
+                    {/* Direction Selection - Only show if no unavailable exam is selected */}
+                    {(!selectedExam || examAvailable) && (
+                        <div className="filter-group">
+                            <label>Direction:</label>
+                            <div className="radio-group">
+                                <label>
+                                    <input
+                                        type="radio"
+                                        value="incoming"
+                                        checked={selectedDirection === "incoming"}
+                                        onChange={() => setSelectedDirection("incoming")}
+                                        disabled={!selectedShift}
+                                    />
+                                    Incoming
+                                </label>
+                                <label>
+                                    <input
+                                        type="radio"
+                                        value="outgoing"
+                                        checked={selectedDirection === "outgoing"}
+                                        onChange={() => setSelectedDirection("outgoing")}
+                                        disabled={!selectedShift}
+                                    />
+                                    Outgoing
+                                </label>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Show time selection only for Saturday's Admin Outgoing */}
                     {isSaturday && selectedShift === "adminMedical" && selectedDirection === "outgoing" && (
@@ -247,7 +366,7 @@ const BusSearch = () => {
                         placeholder="Enter stop name..."
                         value={stop}
                         onChange={handleInputChange}
-                        disabled={!selectedShift || !selectedDirection}
+                        disabled={!selectedShift || !selectedDirection || (selectedExam && !examAvailable)}
                         autoComplete="off"
                     />
                     {filteredStops.length > 0 && (
@@ -268,7 +387,7 @@ const BusSearch = () => {
                 <button
                     className="search-button"
                     onClick={searchBuses}
-                    disabled={!selectedStop || !selectedShift || !selectedDirection}
+                    disabled={!selectedStop || !selectedShift || !selectedDirection || (selectedExam && !examAvailable)}
                 >
                     Search Buses
                 </button>
@@ -277,7 +396,7 @@ const BusSearch = () => {
                 <div className="search-results">
                     {buses.length > 0 ? (
                         buses.map((bus, index) => {
-                            const busType = bus.originalBusNumber.split(" - ")[0];
+                            const busType = bus.originalBusNumber?.split(" - ")[0] || "";
                             const contactKey = getContactKey(busType);
                             const contacts = contactDetails[contactKey] || [];
 

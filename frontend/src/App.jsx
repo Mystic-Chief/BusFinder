@@ -8,6 +8,7 @@ import Login from './components/Login';
 import './App.css';
 import axios from 'axios';
 import ErrorBoundary from './components/ErrorBoundary';
+import ExamScheduleUpload from './components/ExamScheduleUpload'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -50,6 +51,7 @@ const App = () => {
                 <Routes>
                     <Route path="/" element={<BusSearch />} />
                     <Route path="/admin" element={<ProtectedRoute user={loggedInUser} allowedRoles={['admin']}><AdminUpload /></ProtectedRoute>} />
+                    <Route path="/exam-schedules" element={<ProtectedRoute user={loggedInUser} allowedRoles={['admin']}><ExamScheduleUpload /></ProtectedRoute>} />
                     <Route path="/temporary-edits" element={<ProtectedRoute user={loggedInUser} allowedRoles={['admin', 'kt-supervisor', 'pt-supervisor']}><TemporaryEdits userRole={loggedInUser?.role} /></ProtectedRoute>} />
                     <Route path="/login" element={<Login setLoggedInUser={setLoggedInUser} />} />
                 </Routes>

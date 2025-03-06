@@ -9,16 +9,19 @@ if (!fs.existsSync(UPLOADS_DIR)) {
     fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
-// Updated collection mapping with Saturday support
 const collectionMap = {
-    // Weekday collections
+    // 🚌 Weekday bus collections
     firstShiftIncoming: "firstshift_incoming",
     firstShiftOutgoing: "firstshift_outgoing",
     adminIncoming: "admin_incoming",
     adminOutgoing: "admin_outgoing",
     generalIncoming: "general_incoming",
     
-    // Saturday-specific collections
+    // 📅 Exam schedule collections 
+    examScheduleIncoming: "exam_schedules",
+    examScheduleOutgoing: "exam_schedules",
+
+    // 🚌 Saturday-specific collections
     firstShiftIncomingSaturday: "firstshift_incoming_saturday",
     firstShiftOutgoingSaturday: "firstshift_outgoing_saturday",
     adminIncomingSaturday: "admin_incoming_saturday",
@@ -26,14 +29,22 @@ const collectionMap = {
     adminOutgoing2Saturday: "admin_outgoing_4_45_saturday"
 };
 
-const processFile = (file, collectionName) => {
+const processFile = (file, collectionName, fileType = "bus", examDetails = {}) => {
     return new Promise((resolve, reject) => {
         const filePath = path.join(UPLOADS_DIR, file.filename);
-        const scriptPath = path.join(SCRIPTS_DIR, "process_pdf.py");
+        const scriptPath = path.join(SCRIPTS_DIR, "process_file.py");
 
-        console.log(`🚀 Processing file: ${filePath} for collection: ${collectionName}`);
+        let command = `python "${scriptPath}" "${filePath}" "${collectionName}" "${fileType}"`;
 
-        const process = exec(`python "${scriptPath}" "${filePath}" "${collectionName}"`);
+        // Add exam-specific fields if processing an exam schedule
+        if (fileType === "exam") {
+            const { startDate, endDate, examTitle, direction } = examDetails;
+            command += ` "${startDate}" "${endDate}" "${examTitle}" "${direction}"`;
+        }
+
+        console.log(`🚀 Processing file: ${filePath} for collection: ${collectionName} as ${fileType}`);
+
+        const process = exec(command);
 
         process.stdout.on("data", (data) => {
             console.log(`📝 Script Output: ${data.trim()}`);
@@ -48,6 +59,16 @@ const processFile = (file, collectionName) => {
             else reject(new Error(`Script failed for ${collectionName}`));
         });
     });
+};
+
+const processExamFile = async (file, direction, examTitle, startDate, endDate) => {
+    const examDetails = {
+        startDate: startDate,
+        endDate: endDate,
+        examTitle: examTitle,
+        direction: direction
+    };
+    await processFile(file, "exam_schedules", "exam", examDetails);
 };
 
 const cleanupOldFiles = () => {
@@ -71,10 +92,18 @@ const cleanupOldFiles = () => {
     });
 };
 
-// Updated mapper with day parameter
-const mapFieldToCollection = (field, day) => {
+const mapFieldToCollection = (field, day, direction = null) => {
+    // ✅ Handle exam schedules separately
+    if (field === "examSchedule") {
+        if (direction === "incoming") {
+            return collectionMap.examScheduleIncoming;
+        } else if (direction === "outgoing") {
+            return collectionMap.examScheduleOutgoing;
+        }
+    }
+
     const isSaturday = day === "Saturday";
-    
+
     const saturdayMappings = {
         firstShiftIncoming: collectionMap.firstShiftIncomingSaturday,
         firstShiftOutgoing: collectionMap.firstShiftOutgoingSaturday,
@@ -88,6 +117,7 @@ const mapFieldToCollection = (field, day) => {
 
 module.exports = {
     processFile,
+    processExamFile,
     cleanupOldFiles,
     mapFieldToCollection
 };

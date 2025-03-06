@@ -26,7 +26,10 @@ const Navbar = ({ loggedInUser, setLoggedInUser }) => {
                         <Link to="/temporary-edits" className="nav-link">Temporary Edits</Link>
                     )}
                     {loggedInUser.role === 'admin' && (
-                        <Link to="/admin" className="nav-link">Admin Upload</Link>
+                        <>
+                            <Link to="/admin" className="nav-link">Admin Upload</Link>
+                            <Link to="/exam-schedules" className="nav-link">Exam Schedules</Link>
+                        </>
                     )}
                     <button onClick={handleLogout} className="logout-button">Logout</button>
                 </>
