@@ -158,6 +158,7 @@ const BusSearch = () => {
         setDropdownOpen(false);
     };
 
+    // Update the searchBuses function in your BusSearch.jsx component
     const searchBuses = async () => {
         if (!selectedStop || !selectedShift || !selectedDirection) {
             toast.error("Please select all filters and a stop");
@@ -184,7 +185,16 @@ const BusSearch = () => {
                 collection = collectionMap[selectedShift][selectedDirection];
             }
 
-            const response = await axios.get(`${API_BASE_URL}/api/bus/buses/${encodeURIComponent(selectedStop)}?collection=${collection}`);
+            // Build the API URL with the correct parameters
+            let url = `${API_BASE_URL}/api/bus/buses/${encodeURIComponent(selectedStop)}?collection=${collection}`;
+
+            // Add exam title and direction when searching for an exam instead of ID
+            if (selectedShift === "exam" && selectedExam) {
+                url += `&examTitle=${encodeURIComponent(selectedExam.examTitle)}`;
+                url += `&direction=${selectedDirection}`;
+            }
+
+            const response = await axios.get(url);
             setBuses(response.data.buses || []);
             setStop("");
 
