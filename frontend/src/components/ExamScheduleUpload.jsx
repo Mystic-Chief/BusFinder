@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import './ExamScheduleUpload.css'; // Make sure to create this CSS file
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -15,15 +16,29 @@ const ExamScheduleUpload = () => {
     const [success, setSuccess] = useState('');
     const navigate = useNavigate();
 
+    // Refs for file input elements
+    const incomingFileRef = useRef(null);
+    const outgoingFileRef = useRef(null);
+
+    // File name display state
+    const [incomingFileName, setIncomingFileName] = useState('No file chosen');
+    const [outgoingFileName, setOutgoingFileName] = useState('No file chosen');
+
     const handleFileChange = (e, type) => {
         const file = e.target.files[0];
         if (file) {
             if (type === 'incoming') {
                 setIncomingFile(file);
+                setIncomingFileName(file.name);
             } else if (type === 'outgoing') {
                 setOutgoingFile(file);
+                setOutgoingFileName(file.name);
             }
         }
+    };
+
+    const triggerFileInput = (ref) => {
+        ref.current.click();
     };
 
     const handleSubmit = async (e) => {
@@ -32,8 +47,24 @@ const ExamScheduleUpload = () => {
         setError('');
         setSuccess('');
 
-        if (!examTitle || !startDate || !endDate || !incomingFile || !outgoingFile) {
-            setError('All fields are required.');
+        if (!examTitle || !startDate || !endDate) {
+            setError('Please fill in all required fields.');
+            setLoading(false);
+            return;
+        }
+
+        if (!incomingFile || !outgoingFile) {
+            setError('Please upload both incoming and outgoing schedule files.');
+            setLoading(false);
+            return;
+        }
+
+        // Validate dates
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        
+        if (start > end) {
+            setError('End date must be after start date.');
             setLoading(false);
             return;
         }
@@ -55,12 +86,23 @@ const ExamScheduleUpload = () => {
 
             if (response.data.success) {
                 setSuccess('Exam schedules uploaded successfully!');
+                // Reset form after successful upload
+                setTimeout(() => {
+                    setExamTitle('');
+                    setStartDate('');
+                    setEndDate('');
+                    setIncomingFile(null);
+                    setOutgoingFile(null);
+                    setIncomingFileName('No file chosen');
+                    setOutgoingFileName('No file chosen');
+                    setSuccess('');
+                }, 3000);
             } else {
                 setError('Failed to upload exam schedules.');
             }
         } catch (err) {
             console.error('Upload error:', err);
-            setError('An error occurred while uploading the files.');
+            setError(err.response?.data?.message || 'An error occurred while uploading the files.');
         } finally {
             setLoading(false);
         }
@@ -68,57 +110,117 @@ const ExamScheduleUpload = () => {
 
     return (
         <div className="exam-schedule-upload">
-            <h2>Upload Exam Schedules</h2>
-            {error && <div className="error-message">{error}</div>}
-            {success && <div className="success-message">{success}</div>}
+            <div className="form-header">
+                <h2>Upload Exam Schedules</h2>
+                <p className="form-subtitle">Add new exam bus schedules to the system</p>
+            </div>
+            
+            {error && (
+                <div className="message error-message">
+                    <i className="icon error-icon">❌</i>
+                    {error}
+                </div>
+            )}
+            
+            {success && (
+                <div className="message success-message">
+                    <i className="icon success-icon">✅</i>
+                    {success}
+                </div>
+            )}
+            
             <form onSubmit={handleSubmit}>
                 <div className="form-group">
-                    <label>Exam Title</label>
+                    <label htmlFor="examTitle">Exam Title <span className="required">*</span></label>
                     <input
+                        id="examTitle"
                         type="text"
                         value={examTitle}
                         onChange={(e) => setExamTitle(e.target.value)}
+                        placeholder="Enter exam title"
                         required
                     />
                 </div>
-                <div className="form-group">
-                    <label>Start Date</label>
-                    <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        required
-                    />
+                
+                <div className="date-fields">
+                    <div className="form-group">
+                        <label htmlFor="startDate">Start Date <span className="required">*</span></label>
+                        <input
+                            id="startDate"
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            required
+                        />
+                    </div>
+                    
+                    <div className="form-group">
+                        <label htmlFor="endDate">End Date <span className="required">*</span></label>
+                        <input
+                            id="endDate"
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            required
+                        />
+                    </div>
                 </div>
-                <div className="form-group">
-                    <label>End Date</label>
+                
+                <div className="form-group file-input-group">
+                    <label>Incoming Schedule File <span className="required">*</span></label>
                     <input
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        required
-                    />
-                </div>
-                <div className="form-group">
-                    <label>Incoming Schedule File</label>
-                    <input
+                        ref={incomingFileRef}
                         type="file"
                         accept=".xlsx"
                         onChange={(e) => handleFileChange(e, 'incoming')}
                         required
+                        className="hidden-input"
                     />
+                    <div className="file-input-container">
+                        <div className="file-name">{incomingFileName}</div>
+                        <button 
+                            type="button" 
+                            className="file-button"
+                            onClick={() => triggerFileInput(incomingFileRef)}
+                        >
+                            Choose File
+                        </button>
+                    </div>
                 </div>
-                <div className="form-group">
-                    <label>Outgoing Schedule File</label>
+                
+                <div className="form-group file-input-group">
+                    <label>Outgoing Schedule File <span className="required">*</span></label>
                     <input
+                        ref={outgoingFileRef}
                         type="file"
                         accept=".xlsx"
                         onChange={(e) => handleFileChange(e, 'outgoing')}
                         required
+                        className="hidden-input"
                     />
+                    <div className="file-input-container">
+                        <div className="file-name">{outgoingFileName}</div>
+                        <button 
+                            type="button" 
+                            className="file-button"
+                            onClick={() => triggerFileInput(outgoingFileRef)}
+                        >
+                            Choose File
+                        </button>
+                    </div>
                 </div>
-                <button type="submit" disabled={loading}>
-                    {loading ? 'Uploading...' : 'Upload'}
+                
+                <button 
+                    type="submit" 
+                    className="submit-button" 
+                    disabled={loading}
+                >
+                    {loading ? (
+                        <span className="loading-spinner">
+                            <span className="spinner"></span>
+                            Uploading...
+                        </span>
+                    ) : 'Upload Exam Schedules'}
                 </button>
             </form>
         </div>

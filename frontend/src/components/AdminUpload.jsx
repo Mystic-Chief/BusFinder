@@ -185,6 +185,12 @@ const AdminUpload = () => {
                 )}
             </div>
 
+            {uploading && (
+                <div className="loading-progress">
+                    <div className="progress-bar" style={{ width: `${progress}%` }}></div>
+                </div>
+            )}
+
             <button
                 onClick={handleUpload}
                 disabled={uploading || !Object.values(files).some(Boolean)}
@@ -193,7 +199,7 @@ const AdminUpload = () => {
                 {uploading ? `Processing... ${progress}%` : "Process All Files"}
             </button>
 
-            <ToastContainer />
+            <ToastContainer position="top-right" autoClose={3000} />
         </div>
     );
 };
@@ -210,8 +216,13 @@ const FileUpload = ({ id, label, file, onChange, disabled }) => (
             disabled={disabled}
         />
         <label htmlFor={id} className="custom-file-label">
-            {file ? file.name : "Choose File"}
+            {file ? "Change File" : "Choose File"}
         </label>
+        {file && (
+            <div className="file-name-display" title={file.name}>
+                {file.name}
+            </div>
+        )}
     </div>
 );
 

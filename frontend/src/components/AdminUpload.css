@@ -1,32 +1,127 @@
-.admin-upload-container {
-  max-width: 800px;
-  margin: 2rem auto;
-  padding: 2rem;
-  background: #f8f9fa;
-  border-radius: 10px;
-  box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+/* AdminUpload Improved Styles */
+:root {
+  --primary-color: #2196F3;
+  --primary-hover: #1976D2;
+  --success-color: #4CAF50;
+  --success-hover: #45a049;
+  --light-bg: #f8f9fa;
+  --card-bg: #ffffff;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --border-color: #d1d5db;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  --border-radius: 8px;
+  --transition: all 0.2s ease;
 }
 
+/* Container */
+.admin-upload-container {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: var(--light-bg);
+  border-radius: 10px;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+}
+
+.admin-upload-container h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+/* Day Selector */
+.day-selector {
+  background: var(--card-bg);
+  padding: 1.25rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.day-selector label {
+  margin-right: 1rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.day-selector select {
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background-color: white;
+  font-size: 1rem;
+  min-width: 150px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.day-selector select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
+}
+
+/* Upload Sections */
 .upload-sections {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
 }
 
 .upload-section {
-  background: white;
+  background: var(--card-bg);
   padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  transition: var(--transition);
 }
 
+.upload-section:hover {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.upload-section h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--light-bg);
+}
+
+/* Sub Sections Grid */
 .sub-sections {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
   margin-top: 1rem;
 }
 
+@media (min-width: 768px) {
+  .sub-sections {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .sub-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+}
+
+/* File Upload Group */
 .file-upload-group {
   display: flex;
   flex-direction: column;
@@ -35,57 +130,129 @@
 
 .file-label {
   font-weight: 500;
-  color: #333;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
 }
 
-.custom-file-label {
-  display: inline-block;
-  padding: 0.5rem 1rem;
-  background: #4CAF50;
-  color: white;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.custom-file-label:hover {
-  background: #45a049;
-}
-
+/* Custom File Input */
 .hidden-file-input {
   display: none;
 }
 
-.process-button {
-  margin-top: 2rem;
-  padding: 1rem 2rem;
-  background: #2196F3;
+.custom-file-label {
+  display: block;
+  padding: 0.75rem 1rem;
+  background: var(--success-color);
   color: white;
-  border: none;
-  border-radius: 4px;
+  border-radius: var(--border-radius);
+  text-align: center;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: var(--transition);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.process-button:hover {
-  background: #1976D2;
+.custom-file-label:hover {
+  background: var(--success-hover);
+}
+
+/* Process Button */
+.process-button {
+  display: block;
+  width: 100%;
+  margin-top: 2rem;
+  padding: 1rem 1.5rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: center;
+}
+
+.process-button:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+}
+
+.process-button:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .process-button:disabled {
   background: #9E9E9E;
   cursor: not-allowed;
+  transform: none;
 }
 
-.day-selector {
-  margin-bottom: 20px;
+/* Loading Progress State */
+.loading-progress {
+  position: relative;
+  height: 4px;
+  margin-top: 1rem;
+  background-color: #e0e0e0;
+  border-radius: 2px;
+  overflow: hidden;
 }
 
-.day-selector label {
-  margin-right: 10px;
+.progress-bar {
+  position: absolute;
+  height: 100%;
+  background-color: var(--primary-color);
+  transition: width 0.3s ease;
 }
 
-.day-selector select {
-  padding: 5px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
+/* Toast Container Customization */
+.Toastify__toast-container {
+  width: 320px;
+}
+
+.Toastify__toast {
+  border-radius: var(--border-radius);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 767px) {
+  .admin-upload-container {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+  
+  .upload-section {
+    padding: 1.25rem;
+  }
+  
+  .day-selector {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .day-selector label {
+    margin-right: 0;
+  }
+  
+  .day-selector select {
+    width: 100%;
+  }
+  
+  .process-button {
+    padding: 0.875rem;
+  }
+}
+
+/* File name display */
+.file-name-display {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 0.35rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  padding: 0 0.25rem;
 }

@@ -1,54 +1,149 @@
-.temp-edit-container {
-    max-width: 100%;
-    padding: 1rem;
-    background: #fff;
+/* Improved TemporaryEdits Styles */
+:root {
+    --primary-color: #2196F3;
+    --success-color: #4CAF50;
+    --success-hover: #45a049;
+    --warning-color: #ffc107;
+    --warning-bg: #fff9e6;
+    --light-bg: #f8f9fa;
+    --border-color: #ddd;
+    --text-primary: #333333;
+    --text-secondary: #666666;
+    --shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    --border-radius: 8px;
+    --transition: all 0.2s ease;
 }
 
+.temp-edit-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    background: #fff;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+}
+
+.temp-edit-container h2 {
+    text-align: center;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.temp-edit-container h3 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: var(--text-secondary);
+    font-weight: normal;
+}
+
+/* Selector Container */
+.selector-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+    background: var(--light-bg);
+    padding: 1.25rem;
+    border-radius: var(--border-radius);
+}
+
+.shift-select {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+}
+
+/* Radio button styles */
+.direction-radio,
+.time-radio {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    padding: 0.5rem 0;
+}
+
+.direction-radio label,
+.time-radio label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.direction-radio input[type="radio"],
+.time-radio input[type="radio"] {
+    margin: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--primary-color);
+    border-radius: 50%;
+    outline: none;
+    transition: var(--transition);
+    position: relative;
+}
+
+.direction-radio input[type="radio"]:checked,
+.time-radio input[type="radio"]:checked {
+    background-color: white;
+}
+
+.direction-radio input[type="radio"]:checked::after,
+.time-radio input[type="radio"]:checked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+}
+
+/* Search Controls */
 .search-controls {
     display: flex;
     gap: 1rem;
     margin-bottom: 1.5rem;
+    width: 100%;
 }
 
 .search-select {
-    padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
     min-width: 200px;
 }
 
 .search-input {
     flex-grow: 1;
     padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
 }
 
-.selector-container {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.shift-select {
-    width: 100%;
-    padding: 0.8rem;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-}
-
-.direction-radio {
-    display: flex;
-    gap: 1.5rem;
-    padding: 0.5rem 0;
+/* Bus Card Styles */
+.bus-cards-container {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
 }
 
 .bus-card {
-    background: #f8f9fa;
-    border-radius: 8px;
+    background: var(--light-bg);
+    border-radius: var(--border-radius);
     margin-bottom: 1rem;
-    padding: 1rem;
+    padding: 1.25rem;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+}
+
+.bus-card:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 .bus-header {
@@ -57,143 +152,206 @@
     gap: 1rem;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.bus-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
 }
 
 .bus-actions {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.75rem;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .bus-actions input {
-    padding: 0.5rem;
-    border: 1px solid #ddd;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     width: 120px;
 }
 
-button:disabled {
-    background: #cccccc !important;
-    cursor: not-allowed;
-    opacity: 0.7;
+.bus-actions button {
+    padding: 0.6rem 0.75rem;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: var(--transition);
 }
 
+.bus-actions button:hover:not(:disabled) {
+    background: #1976D2;
+}
+
+.bus-actions button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Keep the disabled bulk button blue */
+.bulk-button:disabled {
+    background: var(--primary-color) !important;
+}
+
+/* Stops List */
 .stops-list {
     display: grid;
-    gap: 0.5rem;
+    gap: 0.75rem;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+/* Custom scrollbar */
+.stops-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.stops-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.stops-list::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+}
+
+.stops-list::-webkit-scrollbar-thumb:hover {
+    background: #aaa;
 }
 
 .stop-item {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem;
+    gap: 0.75rem;
+    padding: 0.75rem;
     background: white;
     border-radius: 4px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: var(--transition);
+    user-select: none;
 }
 
-.stop-item:hover {
+.stop-item:hover:not(.temp-stop) {
     background: #e9ecef;
 }
 
+/* Improved checkbox styling */
+.stop-item input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--primary-color);
+    border-radius: 4px;
+    margin: 0;
+    flex-shrink: 0;
+    cursor: pointer;
+    position: relative;
+    transition: var(--transition);
+}
+
+.stop-item input[type="checkbox"]:checked {
+    background-color: var(--primary-color);
+}
+
+.stop-item input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.stop-item input[type="checkbox"]:disabled {
+    border-color: #ccc;
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+}
+
+.stop-item span {
+    flex-grow: 1;
+}
+
 .partial-save {
-    margin-top: 1rem;
+    margin-top: 1.25rem;
     width: 100%;
-    padding: 0.5rem;
-    background: #4CAF50;
+    padding: 0.75rem;
+    background: var(--success-color);
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--border-radius);
     cursor: pointer;
+    font-weight: 500;
+    transition: var(--transition);
 }
 
-/* Remove the disabled styling for partial-save */
+.partial-save:hover:not(:disabled) {
+    background: var(--success-hover);
+}
+
 .partial-save:disabled {
-    background: #4CAF50 !important;
-    cursor: pointer;
-    opacity: 0.5;
+    background: var(--success-color) !important;
+    opacity: 0.6;
+    cursor: not-allowed;
 }
-
-/* Add hover effect */
-.partial-save:not(:disabled):hover {
-    background: #45a049;
-}
-
-/* .temporary {
-    background-color: #fff3cd;
-    border-left: 4px solid #ffc107;
-}
-
-.temporary h3 {
-    color: #856404;
-} */
 
 /* Temporary styling */
 .temporary {
-    border: 2px solid #ffc107;
-    background-color: #fff9e6;
+    border: 2px solid var(--warning-color);
+    background-color: var(--warning-bg);
 }
 
-.temp-info {
-    font-size: 0.9rem;
-    color: #666;
-    margin-top: 4px;
-}
-
-.temp-label {
-    color: #d48806;
-    font-weight: bold;
-    margin-right: 8px;
-}
-
-.original-bus {
-    font-style: italic;
-}
-
-.bus-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 12px;
-}
-
-/* Temporary stop styling */
 .temp-stop {
     background-color: #fff3cd;
-    border-left: 3px solid #ffc107;
-    padding-left: 8px;
+    border-left: 3px solid var(--warning-color);
 }
 
 .temp-badge {
-    background: #ffc107;
+    background: var(--warning-color);
     color: #000;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.8em;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 0.75rem;
     margin-left: 8px;
+    font-weight: 500;
 }
 
-/* Temporary bus card styling */
-.bus-card.temporary {
-    border: 2px solid #ffc107;
-    background-color: #fff9e6;
+/* Responsive styling */
+@media (max-width: 768px) {
+    .search-controls {
+        flex-direction: column;
+    }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 576px) {
     .bus-header {
         flex-direction: column;
         align-items: flex-start;
     }
-    
+
     .bus-actions {
         width: 100%;
-        flex-direction: column;
+        justify-content: space-between;
+        margin-top: 0.75rem;
     }
-    
-    .bus-actions input {
-        width: 100%;
+
+    .direction-radio,
+    .time-radio {
+        justify-content: space-around;
     }
 }
