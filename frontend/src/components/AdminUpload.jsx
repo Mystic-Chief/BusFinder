@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -7,18 +7,33 @@ import "../components/AdminUpload.css";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const AdminUpload = () => {
+    // Add refs for all file inputs
+    const fileInputRefs = useRef({
+        firstShiftIncoming: null,
+        firstShiftOutgoing: null,
+        adminIncoming: null,
+        adminOutgoing: null,
+        generalIncoming: null,
+        adminOutgoing1: null,
+        adminOutgoing2: null,
+    });
+
+    // Add canvasRef at component level
+    const canvasRef = useRef(null);
+
     const [files, setFiles] = useState({
         firstShiftIncoming: null,
         firstShiftOutgoing: null,
         adminIncoming: null,
         adminOutgoing: null,
         generalIncoming: null,
-        adminOutgoing1: null, // For Saturday's 1:15 PM Outgoing
-        adminOutgoing2: null, // For Saturday's 4:45 PM Outgoing
+        adminOutgoing1: null,
+        adminOutgoing2: null,
     });
     const [uploading, setUploading] = useState(false);
     const [progress, setProgress] = useState(0);
-    const [selectedDay, setSelectedDay] = useState('Monday-Friday'); // Default to Monday-Friday
+    const [selectedDay, setSelectedDay] = useState('Monday-Friday');
+
 
     const handleFileChange = (category) => (e) => {
         const selectedFile = e.target.files[0];
@@ -40,6 +55,11 @@ const AdminUpload = () => {
             generalIncoming: null,
             adminOutgoing1: null,
             adminOutgoing2: null,
+        });
+
+        // Reset file input values
+        Object.values(fileInputRefs.current).forEach(ref => {
+            if (ref) ref.value = '';
         });
     };
 
@@ -85,6 +105,12 @@ const AdminUpload = () => {
                 adminOutgoing1: null,
                 adminOutgoing2: null,
             });
+
+            // Reset file input values
+            Object.values(fileInputRefs.current).forEach(ref => {
+                if (ref) ref.value = '';
+            });
+
         } catch (error) {
             console.error('File Upload Error:', error);
             toast.error(error.response?.data?.message || 'Error processing files. Check console for details.');
@@ -93,6 +119,32 @@ const AdminUpload = () => {
             setProgress(0);
         }
     };
+
+    // Move the useEffect to the component level
+    useEffect(() => {
+        if (!canvasRef.current || !uploading) return;
+
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw background
+        ctx.fillStyle = '#e0e0e0';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw progress bar
+        ctx.fillStyle = '#2196F3';
+        ctx.fillRect(0, 0, canvas.width * (progress / 100), canvas.height);
+
+        // Add text
+        ctx.fillStyle = '#333';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${progress}%`, canvas.width / 2, canvas.height / 2 + 4);
+    }, [progress, uploading]);
+
 
     const isSaturday = selectedDay === 'Saturday';
 
@@ -119,6 +171,7 @@ const AdminUpload = () => {
                             onChange={handleFileChange('firstShiftIncoming')}
                             file={files.firstShiftIncoming}
                             disabled={uploading}
+                            inputRef={el => fileInputRefs.current.firstShiftIncoming = el}
                         />
                         <FileUpload
                             id="firstShiftOutgoing"
@@ -126,6 +179,7 @@ const AdminUpload = () => {
                             onChange={handleFileChange('firstShiftOutgoing')}
                             file={files.firstShiftOutgoing}
                             disabled={uploading}
+                            inputRef={el => fileInputRefs.current.firstShiftOutgoing = el}
                         />
                     </div>
                 </div>
@@ -133,13 +187,14 @@ const AdminUpload = () => {
                 {/* ADM/Medical Shift Section */}
                 <div className="upload-section">
                     <h3>ADM/Medical Shift</h3>
-                    <div className="sub-sections">
+                    <div className={`sub-sections ${isSaturday ? 'saturday-adm' : ''}`}>
                         <FileUpload
                             id="adminIncoming"
                             label="Incoming"
                             onChange={handleFileChange('adminIncoming')}
                             file={files.adminIncoming}
                             disabled={uploading}
+                            inputRef={el => fileInputRefs.current.adminIncoming = el}
                         />
                         {!isSaturday ? (
                             <FileUpload
@@ -148,6 +203,7 @@ const AdminUpload = () => {
                                 onChange={handleFileChange('adminOutgoing')}
                                 file={files.adminOutgoing}
                                 disabled={uploading}
+                                inputRef={el => fileInputRefs.current.adminOutgoing = el}
                             />
                         ) : (
                             <>
@@ -157,6 +213,7 @@ const AdminUpload = () => {
                                     onChange={handleFileChange('adminOutgoing1')}
                                     file={files.adminOutgoing1}
                                     disabled={uploading}
+                                    inputRef={el => fileInputRefs.current.adminOutgoing1 = el}
                                 />
                                 <FileUpload
                                     id="adminOutgoing2"
@@ -164,6 +221,7 @@ const AdminUpload = () => {
                                     onChange={handleFileChange('adminOutgoing2')}
                                     file={files.adminOutgoing2}
                                     disabled={uploading}
+                                    inputRef={el => fileInputRefs.current.adminOutgoing2 = el}
                                 />
                             </>
                         )}
@@ -172,23 +230,29 @@ const AdminUpload = () => {
 
                 {/* General Shift Section */}
                 {!isSaturday && (
-                    <div className="upload-section">
+                    <div className="upload-section general-shift">
                         <h3>General Shift</h3>
-                        <FileUpload
-                            id="generalIncoming"
-                            label="Incoming"
-                            onChange={handleFileChange('generalIncoming')}
-                            file={files.generalIncoming}
-                            disabled={uploading}
-                        />
+                        <div className="sub-sections">
+                            <FileUpload
+                                id="generalIncoming"
+                                label="Incoming"
+                                onChange={handleFileChange('generalIncoming')}
+                                file={files.generalIncoming}
+                                disabled={uploading}
+                                inputRef={el => fileInputRefs.current.generalIncoming = el}
+                            />
+                        </div>
                     </div>
                 )}
             </div>
 
             {uploading && (
-                <div className="loading-progress">
-                    <div className="progress-bar" style={{ width: `${progress}%` }}></div>
-                </div>
+                <canvas
+                    ref={canvasRef}
+                    width="400"
+                    height="20"
+                    style={{ marginTop: '1.5rem', borderRadius: '4px' }}
+                />
             )}
 
             <button
@@ -196,7 +260,7 @@ const AdminUpload = () => {
                 disabled={uploading || !Object.values(files).some(Boolean)}
                 className="process-button"
             >
-                {uploading ? `Processing... ${progress}%` : "Process All Files"}
+                {uploading ? `Processing...` : "Process All Files"}
             </button>
 
             <ToastContainer position="top-right" autoClose={3000} />
@@ -204,26 +268,44 @@ const AdminUpload = () => {
     );
 };
 
-const FileUpload = ({ id, label, file, onChange, disabled }) => (
-    <div className="file-upload-group">
-        {label && <label className="file-label">{label}</label>}
-        <input
-            type="file"
-            id={id}
-            className="hidden-file-input"
-            accept=".xlsx"
-            onChange={onChange}
-            disabled={disabled}
-        />
-        <label htmlFor={id} className="custom-file-label">
-            {file ? "Change File" : "Choose File"}
-        </label>
-        {file && (
-            <div className="file-name-display" title={file.name}>
-                {file.name}
-            </div>
-        )}
-    </div>
-);
+const FileUpload = ({ id, label, file, onChange, disabled, inputRef }) => {
+    // Function to truncate long filenames
+    const truncateFilename = (name, maxLength = 20) => {
+        if (!name) return "";
+        if (name.length <= maxLength) return name;
+
+        const extension = name.split('.').pop();
+        const baseName = name.substring(0, name.length - extension.length - 1);
+
+        // Keep the extension and add ellipsis in the middle
+        return `${baseName.substring(0, maxLength - extension.length - 3)}...${extension}`;
+    };
+
+    return (
+        <div className="file-upload-group">
+            {label && <label className="file-label">{label}</label>}
+            <input
+                type="file"
+                id={id}
+                className="hidden-file-input"
+                accept=".xlsx"
+                onChange={onChange}
+                disabled={disabled}
+                ref={inputRef}
+            />
+            <label
+                htmlFor={id}
+                className={file ? "custom-file-label file-selected" : "custom-file-label"}
+            >
+                {file ? "Change File" : "Choose File"}
+            </label>
+            {file && (
+                <div className="file-name-display" title={file.name}>
+                    {truncateFilename(file.name, 16)}
+                </div>
+            )}
+        </div>
+    );
+};
 
 export default AdminUpload;

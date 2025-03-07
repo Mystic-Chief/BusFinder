@@ -4,6 +4,8 @@
   --primary-hover: #1976D2;
   --success-color: #4CAF50;
   --success-hover: #45a049;
+  --change-color: #ff9800;
+  --change-hover: #f57c00;
   --light-bg: #f8f9fa;
   --card-bg: #ffffff;
   --text-primary: #333333;
@@ -80,6 +82,7 @@
   border-radius: var(--border-radius);
   box-shadow: var(--shadow);
   transition: var(--transition);
+  overflow: hidden; /* Ensure content stays within bounds */
 }
 
 .upload-section:hover {
@@ -97,35 +100,51 @@
   border-bottom: 1px solid var(--light-bg);
 }
 
-/* Sub Sections Grid */
+/* Fixed Sub Sections */
 .sub-sections {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
   margin-top: 1rem;
+  width: 100%;
 }
 
 @media (min-width: 768px) {
   .sub-sections {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.25rem;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  .sub-sections .file-upload-group {
+    flex: 1;
+    min-width: 200px;
+    max-width: calc(50% - 0.75rem); /* Account for gap */
+  }
+  
+  /* For Saturday's ADM with two outgoing options */
+  .sub-sections.saturday-adm {
+    flex-direction: column;
+  }
+  
+  .sub-sections.saturday-adm .file-upload-group {
+    max-width: 100%;
   }
 }
 
-@media (max-width: 767px) {
-  .sub-sections {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
+/* General shift with just one upload */
+.upload-section.general-shift .file-upload-group {
+  max-width: 100%;
+  margin: 0 auto;
 }
 
 /* File Upload Group */
 .file-upload-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  width: 100%;
+  margin-bottom: 0;
+  box-sizing: border-box;
 }
 
 .file-label {
@@ -152,10 +171,37 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .custom-file-label:hover {
   background: var(--success-hover);
+}
+
+/* Style for when a file is selected */
+.custom-file-label.file-selected {
+  background: var(--change-color);
+}
+
+.custom-file-label.file-selected:hover {
+  background: var(--change-hover);
+}
+
+/* File Name Display */
+.file-name-display {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #f2f2f2;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  border: 1px solid #e0e0e0;
+  box-sizing: border-box;
 }
 
 /* Process Button */
@@ -193,10 +239,10 @@
 /* Loading Progress State */
 .loading-progress {
   position: relative;
-  height: 4px;
-  margin-top: 1rem;
+  height: 8px;
+  margin: 1.5rem 0;
   background-color: #e0e0e0;
-  border-radius: 2px;
+  border-radius: 4px;
   overflow: hidden;
 }
 
@@ -243,16 +289,4 @@
   .process-button {
     padding: 0.875rem;
   }
-}
-
-/* File name display */
-.file-name-display {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  margin-top: 0.35rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  padding: 0 0.25rem;
 }

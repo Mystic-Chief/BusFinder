@@ -4,6 +4,8 @@
     --primary-hover: #1976D2;
     --success-color: #4CAF50;
     --success-hover: #45a049;
+    --change-color: #ff9800;  /* Added for Change File button */
+    --change-hover: #f57c00;  /* Added for Change File button hover */
     --error-color: #ef4444;
     --text-primary: #333333;
     --text-secondary: #666666;
@@ -149,6 +151,15 @@ form {
 
 .file-button:hover {
     background-color: var(--success-hover);
+}
+
+/* Change File button - different color when a file is selected */
+.file-button.file-selected {
+    background-color: var(--change-color);
+}
+
+.file-button.file-selected:hover {
+    background-color: var(--change-hover);
 }
 
 /* Submit Button */

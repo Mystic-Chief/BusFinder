@@ -33,10 +33,15 @@ exports.getAllExams = async (req, res) => {
 
             // Calculate availability date (one day before exam starts)
             const availableFrom = new Date(startDate);
+            availableFrom.setHours(0, 0, 0, 0);
             availableFrom.setDate(startDate.getDate() - 1);
 
+            // Set current date to midnight for comparison
+            const today = new Date(currentDate);
+            today.setHours(0, 0, 0, 0);
+
             // Determine if exam is available now
-            const isAvailable = currentDate >= availableFrom && currentDate <= endDate;
+            const isAvailable = today >= availableFrom && currentDate <= endDate;
 
             // Check if the exam has ended
             const hasEnded = currentDate > endDate;

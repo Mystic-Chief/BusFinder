@@ -48,7 +48,7 @@ const getStops = async (req, res) => {
 const getBuses = async (req, res) => {
     try {
         const collectionName = req.query.collection;
-        const stopName = req.params.stop.toLowerCase();
+        const stopName = req.params.stopName; // Changed from req.params.stop
         const examId = req.query.examId;
 
         if (!collectionName) {
@@ -64,9 +64,9 @@ const getBuses = async (req, res) => {
         let query = {};
 
         if (collectionName === "exam_schedules") {
-            // For exam schedules, filter by stop
+            // For exam schedules, use exact match
             query = { 
-                Stops: { $regex: new RegExp(stopName, 'i') }
+                Stops: stopName // Changed from "Stop" to "Stops" for consistency
             };
             
             // If exam title is provided, add it to the query instead of ID
@@ -79,9 +79,9 @@ const getBuses = async (req, res) => {
                 query.direction = req.query.direction;
             }
         } else {
-            // For regular bus schedules, just filter by stop
+            // For regular bus schedules, use exact match
             query = { 
-                Stops: { $regex: new RegExp(stopName, 'i') }
+                Stops: stopName
             };
         }
 
@@ -91,30 +91,18 @@ const getBuses = async (req, res) => {
 
         // Skip temporary changes handling for exam schedules
         if (collectionName === "exam_schedules") {
-            // Process results for exam schedules
-            const results = [];
-            
-            for (const bus of originalBuses) {
-                // Find matching stops (case insensitive)
-                const regex = new RegExp(stopName, 'i');
-                const matchingStops = bus.Stops.filter(stop => regex.test(stop));
-                
-                if (matchingStops.length > 0) {
-                    for (const stop of matchingStops) {
-                        results.push({
-                            message: `Bus: ${bus["Bus Code"]}`,
-                            originalBusNumber: bus["Bus Code"],
-                            direction: bus.direction
-                        });
-                    }
-                }
-            }
+            // Simplified: No need for regex filtering since we're using exact match in query
+            const results = originalBuses.map(bus => ({
+                message: `Bus: ${bus["Bus Code"]}`,
+                originalBusNumber: bus["Bus Code"],
+                direction: bus.direction
+            }));
             
             console.log(`✅ Returning ${results.length} exam buses for stop: "${stopName}"`);
             return res.json({ buses: results });
         }
 
-        // For regular bus schedules, handle temporary changes
+        // For regular bus schedules, handle temporary changes with exact stop matching
         const activeChanges = await tempCollection.find({
             $or: [
                 {
@@ -125,7 +113,7 @@ const getBuses = async (req, res) => {
                 },
                 {
                     type: "partial",
-                    stops: stopName,
+                    stops: stopName, // Exact match
                     originalCollection: collectionName,
                     expiresAt: { $gt: new Date() }
                 }
@@ -134,16 +122,8 @@ const getBuses = async (req, res) => {
 
         console.log(`🔍 Found ${activeChanges.length} active temporary changes for stop: "${stopName}"`);
 
-        // Merge original buses with temporary changes
-        const results = [];
-        
-        for (const bus of originalBuses) {
-            // Find matching stops (case insensitive)
-            const regex = new RegExp(stopName, 'i');
-            const matchingStops = bus.Stops.filter(stop => regex.test(stop));
-            
-            if (matchingStops.length === 0) continue;
-            
+        // Simplified: No need for regex filtering since we're using exact match in query
+        const results = originalBuses.map(bus => {
             // Find applicable changes (prioritize bulk changes)
             const bulkChange = activeChanges.find(c =>
                 c.type === "bulk" && c.busId === bus._id.toString()
@@ -162,8 +142,7 @@ const getBuses = async (req, res) => {
             const finalBusNumber = changes.length > 0 ? changes[0].newBusNumber : bus["Bus Code"];
             const expiresAt = changes.length > 0 ? changes[0].expiresAt : null;
 
-            // Only create one result per bus, not per matching stop
-            const result = {
+            return {
                 originalBusNumber: bus["Bus Code"],
                 newBusNumber: finalBusNumber,
                 expiresAt: expiresAt ? expiresAt.toISOString() : null,
@@ -175,9 +154,7 @@ const getBuses = async (req, res) => {
                     })}`
                     : `Bus: ${bus["Bus Code"]}`
             };
-            
-            results.push(result);
-        }
+        });
 
         console.log(`✅ Returning ${results.length} buses for stop: "${stopName}"`);
         res.json({ buses: results });

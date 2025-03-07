@@ -7,6 +7,6 @@ const router = express.Router();
 router.get("/stops", busController.getStops);
 
 // Get buses for a stop
-router.get("/buses/:stop", busController.getBuses);
+router.get("/buses/:stopName", busController.getBuses);
 
 module.exports = router;

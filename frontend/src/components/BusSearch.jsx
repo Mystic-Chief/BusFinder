@@ -1,17 +1,4 @@
-// Helper function to check if an exam is available for searching
-const isExamAvailable = (exam) => {
-    if (!exam) return false;
-    
-    const now = new Date();
-    const startDate = new Date(exam.startDate);
-    const endDate = new Date(exam.endDate);
-    
-    // Exam schedule is available from one day before the start date
-    const availableFrom = new Date(startDate);
-    availableFrom.setDate(startDate.getDate() - 1);
-    
-    return now >= availableFrom && now <= endDate;
-};import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import { Link, useLocation } from "react-router-dom";
@@ -19,6 +6,28 @@ import "react-toastify/dist/ReactToastify.css";
 import "../components/BusSearch.css"; // Make sure to replace with the new CSS file
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+// Helper function to check if an exam is available for searching
+const isExamAvailable = (exam) => {
+    if (!exam) return false;
+    
+    // Get current date and normalize to midnight
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    
+    // Get start and end dates
+    const startDate = new Date(exam.startDate);
+    startDate.setHours(0, 0, 0, 0);
+    
+    const endDate = new Date(exam.endDate);
+    endDate.setHours(23, 59, 59, 999); // End of day
+    
+    // Exam is available from midnight of the day before
+    const availableFrom = new Date(startDate);
+    availableFrom.setDate(startDate.getDate() - 1);
+    
+    return now >= availableFrom && now <= endDate;
+};
 
 const BusSearch = () => {
 const [stop, setStop] = useState("");

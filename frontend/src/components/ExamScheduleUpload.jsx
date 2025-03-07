@@ -41,6 +41,18 @@ const ExamScheduleUpload = () => {
         ref.current.click();
     };
 
+    // Function to truncate long filenames
+    const truncateFilename = (name, maxLength = 20) => {
+        if (!name || name === 'No file chosen') return name;
+        if (name.length <= maxLength) return name;
+        
+        const extension = name.split('.').pop();
+        const baseName = name.substring(0, name.length - extension.length - 1);
+        
+        // Keep the extension and add ellipsis in the middle
+        return `${baseName.substring(0, maxLength - extension.length - 3)}...${extension}`;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -96,6 +108,10 @@ const ExamScheduleUpload = () => {
                     setIncomingFileName('No file chosen');
                     setOutgoingFileName('No file chosen');
                     setSuccess('');
+                    
+                    // Reset file input values
+                    if (incomingFileRef.current) incomingFileRef.current.value = '';
+                    if (outgoingFileRef.current) outgoingFileRef.current.value = '';
                 }, 3000);
             } else {
                 setError('Failed to upload exam schedules.');
@@ -177,13 +193,15 @@ const ExamScheduleUpload = () => {
                         className="hidden-input"
                     />
                     <div className="file-input-container">
-                        <div className="file-name">{incomingFileName}</div>
+                        <div className="file-name" title={incomingFileName}>
+                            {truncateFilename(incomingFileName, 16)}
+                        </div>
                         <button 
                             type="button" 
-                            className="file-button"
+                            className={incomingFile ? "file-button file-selected" : "file-button"}
                             onClick={() => triggerFileInput(incomingFileRef)}
                         >
-                            Choose File
+                            {incomingFile ? "Change File" : "Choose File"}
                         </button>
                     </div>
                 </div>
@@ -199,13 +217,15 @@ const ExamScheduleUpload = () => {
                         className="hidden-input"
                     />
                     <div className="file-input-container">
-                        <div className="file-name">{outgoingFileName}</div>
+                        <div className="file-name" title={outgoingFileName}>
+                            {truncateFilename(outgoingFileName, 16)}
+                        </div>
                         <button 
                             type="button" 
-                            className="file-button"
+                            className={outgoingFile ? "file-button file-selected" : "file-button"}
                             onClick={() => triggerFileInput(outgoingFileRef)}
                         >
-                            Choose File
+                            {outgoingFile ? "Change File" : "Choose File"}
                         </button>
                     </div>
                 </div>
