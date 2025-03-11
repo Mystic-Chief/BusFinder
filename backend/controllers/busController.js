@@ -14,26 +14,67 @@ const getStops = async (req, res) => {
 
         const collection = mongoose.connection.db.collection(collectionName);
         
-        // For exam schedules, filter by exam ID if provided
         let pipeline = [];
         
-        if (collectionName === "exam_schedules" && req.query.examId) {
-            pipeline.push({ 
-                $match: { _id: mongoose.Types.ObjectId(req.query.examId) } 
-            });
+        // For exam schedules, apply more specific filters
+        if (collectionName === "exam_schedules") {
+            let match = {};
+            
+            // Filter by examId if provided
+            if (req.query.examId) {
+                match._id = mongoose.Types.ObjectId(req.query.examId);
+            }
+            
+            // Filter by examTitle if provided
+            if (req.query.examTitle) {
+                match.examTitle = req.query.examTitle;
+            }
+            
+            // Filter by direction if provided
+            if (req.query.direction) {
+                match.direction = req.query.direction;
+            }
+            
+            // Only add match stage if there are filters
+            if (Object.keys(match).length > 0) {
+                pipeline.push({ $match: match });
+            }
         }
         
-        // Add the standard pipeline steps
-        pipeline = pipeline.concat([
-            { $unwind: "$Stops" }, // Unwind the Stops array
-            { $group: { _id: "$Stops" } }, // Group by stop names
-            { $sort: { _id: 1 } } // Sort alphabetically
-        ]);
+        // Add the standard pipeline steps with a composite key for uniqueness
+        if (collectionName === "exam_schedules") {
+            pipeline = pipeline.concat([
+                { $unwind: "$Stops" },
+                // Create a composite key for grouping to ensure uniqueness
+                { 
+                    $group: { 
+                        _id: {
+                            stop: "$Stops",
+                            direction: "$direction",
+                            examTitle: "$examTitle"
+                        }
+                    } 
+                },
+                // Sort by stop name
+                { $sort: { "_id.stop": 1 } },
+                // Project back to just the stop name for backward compatibility
+                { $project: { _id: "$_id.stop" } }
+            ]);
+        } else {
+            // For regular collections, use standard pipeline
+            pipeline = pipeline.concat([
+                { $unwind: "$Stops" },
+                { $group: { _id: "$Stops" } },
+                { $sort: { _id: 1 } }
+            ]);
+        }
         
         const stops = await collection.aggregate(pipeline).toArray();
 
-        console.log(`🔍 Fetched ${stops.length} stops from collection: ${collectionName}`);
-        res.json({ stops: stops.map(s => s._id) }); // Return only the stop names
+        console.log(`🔍 Fetched ${stops.length} unique stops from collection: ${collectionName}`);
+        
+        // For ALL collections, return just the stop names to maintain backward compatibility
+        res.json({ stops: stops.map(s => s._id) });
     } catch (error) {
         console.error("❌ Stops fetch error:", error);
         res.status(500).json({ error: "Failed to fetch stops" });
@@ -69,7 +110,7 @@ const getBuses = async (req, res) => {
                 Stops: stopName // Changed from "Stop" to "Stops" for consistency
             };
             
-            // If exam title is provided, add it to the query instead of ID
+            // If exam title is provided, add it to the query
             if (req.query.examTitle) {
                 query.examTitle = req.query.examTitle;
             }

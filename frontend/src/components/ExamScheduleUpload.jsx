@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import './ExamScheduleUpload.css'; // Make sure to create this CSS file
+import './ExamScheduleUpload.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -236,10 +236,10 @@ const ExamScheduleUpload = () => {
                     disabled={loading}
                 >
                     {loading ? (
-                        <span className="loading-spinner">
-                            <span className="spinner"></span>
-                            Uploading...
-                        </span>
+                        <>
+                            <div className="spinner"></div>
+                            <span>Uploading...</span>
+                        </>
                     ) : 'Upload Exam Schedules'}
                 </button>
             </form>

@@ -1,12 +1,24 @@
 /* Improved TemporaryEdits Styles */
 :root {
     --primary-color: #2196F3;
+    --primary-dark: #1976D2;
+    --primary-light: #E3F2FD;
     --success-color: #4CAF50;
     --success-hover: #45a049;
-    --warning-color: #ffc107;
-    --warning-bg: #fff9e6;
+    --warning-color: #FF9800;  /* Yellow for temporary */
+    --warning-hover: #F57C00;
+    --warning-bg: #FFF8E1;
+    --warning-light: #FFECB3;
+    --selected-color: #2196F3;
+    --selected-light: rgba(33, 150, 243, 0.1);
+    --removed-color: #F44336;  /* Improved brighter red */
+    --removed-hover: #D32F2F;
+    --removed-bg: #FFEBEE;
+    --added-color: #00C853;
+    --added-bg: #E8F5E9;
     --light-bg: #f8f9fa;
     --border-color: #ddd;
+    --card-border: #e0e0e0;
     --text-primary: #333333;
     --text-secondary: #666666;
     --shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
@@ -45,6 +57,7 @@
     background: var(--light-bg);
     padding: 1.25rem;
     border-radius: var(--border-radius);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .shift-select {
@@ -53,6 +66,17 @@
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     font-size: 1rem;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 40px;
+}
+
+.shift-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
 }
 
 /* Radio button styles */
@@ -117,6 +141,11 @@
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     min-width: 200px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 40px;
 }
 
 .search-input {
@@ -126,24 +155,163 @@
     border-radius: var(--border-radius);
 }
 
-/* Bus Card Styles */
-.bus-cards-container {
-    display: grid;
-    gap: 1.25rem;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+.search-input:focus,
+.search-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
 }
 
-.bus-card {
+/* Loading state */
+.loading-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
     background: var(--light-bg);
     border-radius: var(--border-radius);
+    margin-bottom: 1.5rem;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top-color: var(--primary-color);
+    animation: spin 1s linear infinite;
     margin-bottom: 1rem;
-    padding: 1.25rem;
-    box-shadow: var(--shadow);
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.no-data-message {
+    text-align: center;
+    padding: 2rem;
+    background: var(--light-bg);
+    border-radius: var(--border-radius);
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+/* Stats display with improved visibility */
+.stops-stats {
+    display: flex;
+    justify-content: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stat-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #333333; /* Explicit dark color */
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: #333333; /* Explicit dark color */
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+.temp-value {
+    color: var(--added-color);
+    font-weight: 700;
+}
+
+.selected-value {
+    color: var(--selected-color);
+    font-weight: 700;
+}
+
+.removed-value {
+    color: var(--removed-color);
+    font-weight: 700;
+}
+
+/* Bus Card Styles */
+.bus-card {
+    background: white;
+    border-radius: var(--border-radius);
+    margin-bottom: 1.25rem;
+    padding: 1.5rem;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
     transition: var(--transition);
+    border-left: 5px solid transparent;
+    border: 1px solid var(--card-border);
+    position: relative;
+    overflow: hidden;
 }
 
 .bus-card:hover {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+/* Improved temporary bus card styling */
+.bus-card.temporary {
+    border-left: 5px solid var(--warning-color);
+    background: white;
+    position: relative;
+}
+
+.bus-card.temporary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--warning-bg) 0%, rgba(255, 255, 255, 0) 60%);
+    z-index: 0;
+}
+
+/* Removed bus card styling */
+.bus-card.removed {
+    border-left: 5px solid var(--removed-color);
+    background: white;
+    position: relative;
+}
+
+.bus-card.removed::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--removed-bg) 0%, rgba(255, 255, 255, 0) 60%);
+    z-index: 0;
+}
+
+/* Added bus card styling */
+.bus-card.added {
+    border-left: 5px solid var(--added-color);
+    background: white;
+    position: relative;
+}
+
+.bus-card.added::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--added-bg) 0%, rgba(255, 255, 255, 0) 60%);
+    z-index: 0;
 }
 
 .bus-header {
@@ -152,9 +320,9 @@
     gap: 1rem;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.25rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 1;
 }
 
 .bus-header h3 {
@@ -162,6 +330,59 @@
     font-size: 1.1rem;
     font-weight: 600;
     color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.bus-icon {
+    display: inline-block;
+}
+
+/* Badge container to hold multiple badges */
+.badge-container {
+    display: flex;
+    gap: 5px;
+    margin-left: 8px;
+    flex-wrap: wrap;
+}
+
+/* Improved styling for bus header badges to ensure they display side by side */
+.bus-header .temp-badge,
+.bus-header .added-badge,
+.bus-header .removed-badge {
+    display: inline-flex;
+    height: 22px;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    padding: 2px 10px;
+    border-radius: 50px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+    min-width: fit-content;
+    width: auto;
+    flex-shrink: 0;
+    margin-right: 3px;
+}
+
+/* Temporary Badge for bus header (Yellow) */
+.bus-header .temp-badge {
+    background: var(--warning-color);
+    box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
+}
+
+/* Added Badge for bus header (Green) */
+.bus-header .added-badge {
+    background: var(--added-color);
+    box-shadow: 0 2px 4px rgba(0, 200, 83, 0.3);
+}
+
+/* Removed Badge for bus header (Red) */
+.bus-header .removed-badge {
+    background: var(--removed-color);
+    box-shadow: 0 2px 4px rgba(244, 67, 54, 0.3);
 }
 
 .bus-actions {
@@ -169,27 +390,39 @@
     gap: 0.75rem;
     align-items: center;
     flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
 }
 
 .bus-actions input {
-    padding: 0.6rem 0.75rem;
+    padding: 0.65rem 0.75rem;
     border: 1px solid var(--border-color);
     border-radius: 4px;
     width: 120px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.bus-actions input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
 }
 
 .bus-actions button {
-    padding: 0.6rem 0.75rem;
+    padding: 0.65rem 0.75rem;
     background: var(--primary-color);
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     transition: var(--transition);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .bus-actions button:hover:not(:disabled) {
-    background: #1976D2;
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 }
 
 .bus-actions button:disabled {
@@ -208,7 +441,13 @@
     gap: 0.75rem;
     max-height: 300px;
     overflow-y: auto;
-    padding-right: 5px;
+    padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+    margin-bottom: 1rem;
+    background: var(--light-bg);
+    border-radius: 6px;
+    position: relative;
+    z-index: 1;
+    border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 /* Custom scrollbar */
@@ -217,7 +456,7 @@
 }
 
 .stops-list::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: var(--light-bg);
     border-radius: 10px;
 }
 
@@ -240,19 +479,28 @@
     cursor: pointer;
     transition: var(--transition);
     user-select: none;
+    border-left: 3px solid transparent;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    position: relative;
 }
 
-.stop-item:hover:not(.temp-stop) {
+.stop-item:hover:not(.added-stop):not(.removed-stop) {
     background: #e9ecef;
+    transform: translateX(2px);
 }
 
-/* Improved checkbox styling */
+.stop-item.selected-stop {
+    background-color: var(--selected-light);
+    border-left: 3px solid var(--selected-color);
+}
+
+/* Improved checkbox styling with smaller size */
 .stop-item input[type="checkbox"] {
     appearance: none;
     -webkit-appearance: none;
-    width: 20px;
-    height: 20px;
-    border: 2px solid var(--primary-color);
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid var(--primary-color);
     border-radius: 4px;
     margin: 0;
     flex-shrink: 0;
@@ -268,10 +516,10 @@
 .stop-item input[type="checkbox"]:checked::after {
     content: '';
     position: absolute;
-    left: 6px;
-    top: 2px;
-    width: 5px;
-    height: 10px;
+    left: 4px;
+    top: 1px;
+    width: 4px;
+    height: 7px;
     border: solid white;
     border-width: 0 2px 2px 0;
     transform: rotate(45deg);
@@ -283,12 +531,124 @@
     cursor: not-allowed;
 }
 
-.stop-item span {
-    flex-grow: 1;
+/* Added Stop Styling (Green) */
+.added-stop {
+    background-color: var(--added-bg);
+    border-left: 3px solid var(--added-color);
+    cursor: not-allowed;
+    position: relative;
 }
 
+.added-stop::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 5px,
+        rgba(0, 200, 83, 0.05) 5px,
+        rgba(0, 200, 83, 0.05) 10px
+    );
+    pointer-events: none;
+}
+
+/* Removed Stop Styling (Red) */
+.removed-stop {
+    background-color: var(--removed-bg);
+    border-left: 3px solid var(--removed-color);
+    cursor: not-allowed;
+    position: relative;
+    text-decoration: line-through;
+    opacity: 0.8;
+}
+
+.removed-stop span:first-child {
+    text-decoration: line-through;
+    color: var(--removed-color);
+}
+
+.removed-stop::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 5px,
+        rgba(244, 67, 54, 0.05) 5px,
+        rgba(244, 67, 54, 0.05) 10px
+    );
+    pointer-events: none;
+}
+
+/* Fix for the stop name container */
+.stop-name {
+    flex: 1;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    font-size: 0.95rem;
+    position: relative;
+    padding-right: 80px; /* Space for badge */
+}
+
+.stop-name span:first-child {
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* Added Badge for stops (Green) */
+.stop-item .added-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--added-color);
+    color: white;
+    padding: 3px 10px;
+    border-radius: 50px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(0, 200, 83, 0.3);
+    min-width: fit-content;
+    width: auto;
+    flex-shrink: 0;
+    position: absolute;
+    right: 0;
+    overflow: hidden;
+}
+
+/* Removed Badge for stops (Red) */
+.stop-item .removed-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--removed-color);
+    color: white;
+    padding: 3px 10px;
+    border-radius: 50px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(244, 67, 54, 0.3);
+    min-width: fit-content;
+    width: auto;
+    flex-shrink: 0;
+    position: absolute;
+    right: 0;
+    overflow: hidden;
+}
+
+/* Partial Save Button */
 .partial-save {
-    margin-top: 1.25rem;
+    margin-top: 1rem;
     width: 100%;
     padding: 0.75rem;
     background: var(--success-color);
@@ -298,10 +658,32 @@
     cursor: pointer;
     font-weight: 500;
     transition: var(--transition);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.partial-save::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: 0.5s;
+    z-index: -1;
+}
+
+.partial-save:hover::after {
+    left: 100%;
 }
 
 .partial-save:hover:not(:disabled) {
     background: var(--success-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .partial-save:disabled {
@@ -310,25 +692,8 @@
     cursor: not-allowed;
 }
 
-/* Temporary styling */
-.temporary {
-    border: 2px solid var(--warning-color);
-    background-color: var(--warning-bg);
-}
-
-.temp-stop {
-    background-color: #fff3cd;
-    border-left: 3px solid var(--warning-color);
-}
-
-.temp-badge {
-    background: var(--warning-color);
-    color: #000;
-    padding: 3px 8px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    margin-left: 8px;
-    font-weight: 500;
+.partial-save.needs-input {
+    background-color: var(--selected-color);
 }
 
 /* Responsive styling */
@@ -352,6 +717,10 @@
 
     .direction-radio,
     .time-radio {
+        justify-content: space-around;
+    }
+    
+    .stops-stats {
         justify-content: space-around;
     }
 }

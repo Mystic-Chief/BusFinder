@@ -5,6 +5,7 @@ const getEditableData = async (req, res) => {
         const collection = mongoose.connection.db.collection(req.query.collection);
         const tempCollection = mongoose.connection.db.collection("temp_changes");
 
+        // Fetch original buses and active temporary changes
         const [originalBuses, tempChanges] = await Promise.all([
             collection.find().toArray(),
             tempCollection.find({
@@ -13,101 +14,94 @@ const getEditableData = async (req, res) => {
             }).toArray()
         ]);
 
-        // Group temp changes by new bus number
-        const tempGroups = tempChanges.reduce((acc, change) => {
-            if (!acc[change.newBusNumber]) {
-                acc[change.newBusNumber] = [];
-            }
-            acc[change.newBusNumber].push(change);
-            return acc;
-        }, {});
-
-        // Create final buses list
-        const buses = originalBuses.map(bus => ({
-            ...bus,
-            isTemporary: false,
-            partialChanges: [],
-            bulkChanges: []
-        }));
+        // Create a map of original buses for quick lookup
+        const busesMap = new Map(originalBuses.map(bus => [bus._id.toString(), bus]));
 
         // Process temporary changes
-        Object.entries(tempGroups).forEach(([newBusNumber, changes]) => {
-            changes.forEach(change => {
-                const originalBus = buses.find(b => b._id.toString() === change.busId);
-                if (!originalBus) return;
+        const processedBuses = new Map(); // Track processed buses
+        const tempBuses = []; // Temporary buses created by changes
 
-                // Inside the partial change handling block:
-                if (change.type === 'partial') {
-                    // Remove stops from original bus
-                    originalBus.Stops = originalBus.Stops.filter(s => !change.stops.includes(s));
+        tempChanges.forEach(change => {
+            const originalBus = busesMap.get(change.busId);
+            if (!originalBus) return;
 
-                    // Add to destination bus
-                    let destinationBus = buses.find(b => b['Bus Code'] === newBusNumber);
-                    if (!destinationBus) {
-                        destinationBus = {
-                            _id: `temp_${newBusNumber}_${Date.now()}`,
-                            'Bus Code': newBusNumber,
-                            Stops: [],
-                            isTemporary: true,
-                            partialChanges: [], // Initialize partialChanges for destination
-                            bulkChanges: []
-                        };
-                        buses.push(destinationBus);
-                    }
+            // Initialize change tracking if not already present
+            if (!originalBus.partialChanges) originalBus.partialChanges = [];
+            if (!originalBus.bulkChanges) originalBus.bulkChanges = [];
 
-                    // Add the PARTIAL CHANGE to the DESTINATION BUS
-                    destinationBus.partialChanges.push({
-                        ...change,
-                        stops: change.stops // Track the stops added to this bus
-                    });
+            if (change.type === 'partial') {
+                // Add the change to the original bus's partialChanges
+                // IMPORTANT: No longer removing stops from original bus
+                originalBus.partialChanges.push(change);
 
-                    destinationBus.Stops.push(...change.stops);
-                    destinationBus.isTemporary = true;
-                } else if (change.type === 'bulk') {
-                    // Handle bulk changes
-                    const movedStops = [...originalBus.Stops];
-                    originalBus.Stops = [];
-
-                    // Add to destination bus
-                    let destinationBus = buses.find(b => b['Bus Code'] === newBusNumber);
-                    if (!destinationBus) {
-                        destinationBus = {
-                            _id: `temp_${newBusNumber}_${Date.now()}`, // Unique ID for temporary bus
-                            'Bus Code': newBusNumber,
-                            Stops: [],
-                            isTemporary: true,
-                            partialChanges: [],
-                            bulkChanges: []
-                        };
-                        buses.push(destinationBus);
-                    }
-                    destinationBus.Stops.push(...movedStops);
-                    destinationBus.isTemporary = true;
-                    destinationBus.bulkChanges.push({
-                        ...change,
-                        stops: movedStops
-                    });
+                // Create or update the destination bus
+                let destinationBus = processedBuses.get(change.newBusNumber);
+                if (!destinationBus) {
+                    destinationBus = {
+                        _id: `temp_${change.newBusNumber}_${Date.now()}`, // Unique ID for temporary bus
+                        'Bus Code': change.newBusNumber,
+                        Stops: [],
+                        isTemporary: true,
+                        partialChanges: [],
+                        bulkChanges: []
+                    };
+                    processedBuses.set(change.newBusNumber, destinationBus);
+                    tempBuses.push(destinationBus);
                 }
-            });
+
+                // Add the stops to the destination bus
+                destinationBus.Stops.push(...change.stops);
+                destinationBus.partialChanges.push(change);
+            } else if (change.type === 'bulk') {
+                // Instead of removing stops, mark the change for display purposes
+                // IMPORTANT: No longer emptying original bus's stops
+                change.stops = [...originalBus.Stops]; // Store all stops in the change
+                
+                // Add the change to the original bus's bulkChanges
+                originalBus.bulkChanges.push(change);
+
+                // Create or update the destination bus
+                let destinationBus = processedBuses.get(change.newBusNumber);
+                if (!destinationBus) {
+                    destinationBus = {
+                        _id: `temp_${change.newBusNumber}_${Date.now()}`, // Unique ID for temporary bus
+                        'Bus Code': change.newBusNumber,
+                        Stops: [],
+                        isTemporary: true,
+                        partialChanges: [],
+                        bulkChanges: []
+                    };
+                    processedBuses.set(change.newBusNumber, destinationBus);
+                    tempBuses.push(destinationBus);
+                }
+
+                // Add the stops to the destination bus
+                destinationBus.Stops.push(...originalBus.Stops);
+                destinationBus.bulkChanges.push(change);
+            }
         });
+
+        // Combine original and temporary buses
+        const buses = [...originalBuses, ...tempBuses];
 
         res.json({ buses });
     } catch (error) {
-        console.error("Error fetching editable data:", error);
+        console.error("❌ Error fetching editable data:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 };
 
 const saveTempEdit = async (req, res) => {
     try {
-        const { busId, newBusNumber, type, stops } = req.body;
+        const { busId, newBusNumber, type, stops, collection } = req.body;
         const tempCollection = mongoose.connection.db.collection('temp_changes');
 
-        // Create unique ID for partial changes
+        // Create a unique ID for the change
         const changeId = type === 'partial' ?
             `${busId}-${Date.now()}` : // Unique ID for partial changes
-            busId; // Bulk changes still use busId
+            busId; // Bulk changes use the bus ID
 
+        // Save the temporary change
         await tempCollection.updateOne(
             { _id: changeId },
             {
@@ -116,14 +110,14 @@ const saveTempEdit = async (req, res) => {
                     newBusNumber,
                     type,
                     stops,
-                    expiresAt: new Date(Date.now() + 300000),
-                    originalCollection: req.body.collection
+                    expiresAt: new Date(Date.now() + 300000), // 5 minutes from now
+                    originalCollection: collection
                 }
             },
             { upsert: true }
         );
 
-        console.log(`✅ Saved temporary change for bus: ${req.body.busId}, type: ${req.body.type}`);
+        console.log(`✅ Saved temporary change for bus: ${busId}, type: ${type}`);
         res.json({ success: true });
     } catch (error) {
         console.error("❌ Error saving temporary edit:", error);

@@ -164,7 +164,9 @@ form {
 
 /* Submit Button */
 .submit-button {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 100%;
     padding: 1rem 2rem;
     margin-top: 2rem;
@@ -189,6 +191,23 @@ form {
 .submit-button:disabled {
     background-color: #9E9E9E;
     cursor: not-allowed;
+}
+
+/* Loading Spinner - Completely Rewritten */
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 10px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* Message Styling */
@@ -217,30 +236,6 @@ form {
 .icon {
     margin-right: 0.75rem;
     font-size: 1.1rem;
-}
-
-/* Loading Spinner */
-.loading-spinner {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.spinner {
-    display: inline-block;
-    width: 1rem;
-    height: 1rem;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: white;
-    animation: spin 1s ease-in-out infinite;
-    margin-right: 0.5rem;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
 }
 
 @keyframes slideDown {

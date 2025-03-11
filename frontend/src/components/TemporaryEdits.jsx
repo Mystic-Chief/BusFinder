@@ -20,21 +20,20 @@ const TemporaryEdits = ({ userRole }) => {
 
     // Automatically determine if today is Saturday
     const today = new Date();
-    const isSaturday = today.getDay() === 6; // 0 = Sunday, 6 = Saturday
-    //const isSaturday = false
+    const isSaturday = false // 0 = Sunday, 6 = Saturday
 
     // Collection mapping with Saturday support
     const collectionMap = {
-        firstShift: { 
+        firstShift: {
             incoming: isSaturday ? 'firstshift_incoming_saturday' : 'firstshift_incoming',
             outgoing: isSaturday ? 'firstshift_outgoing_saturday' : 'firstshift_outgoing'
         },
-        adminMedical: { 
+        adminMedical: {
             incoming: isSaturday ? 'admin_incoming_saturday' : 'admin_incoming',
             outgoing1: 'admin_outgoing_1_15_saturday',
             outgoing2: 'admin_outgoing_4_45_saturday'
         },
-        general: { 
+        general: {
             incoming: 'general_incoming',
             outgoing: 'admin_outgoing'
         }
@@ -43,14 +42,14 @@ const TemporaryEdits = ({ userRole }) => {
     useEffect(() => {
         const fetchData = async () => {
             if (!shift || !direction) return;
-            
+
             setLoading(true);
 
             try {
                 let collection;
                 if (isSaturday && shift === 'adminMedical' && direction === 'outgoing') {
-                    collection = selectedTime === '1:15 PM' 
-                        ? collectionMap.adminMedical.outgoing1 
+                    collection = selectedTime === '1:15 PM'
+                        ? collectionMap.adminMedical.outgoing1
                         : collectionMap.adminMedical.outgoing2;
                 } else {
                     collection = collectionMap[shift][direction];
@@ -60,17 +59,17 @@ const TemporaryEdits = ({ userRole }) => {
                 let fetchedBuses = response.data.buses;
 
                 // Role-based filtering
-                if (userRole.includes('supervisor')) {
+                if (userRole && userRole.includes('supervisor')) {
                     const busType = userRole.split('-')[0].toUpperCase(); // "kt" => "KT"
-                    
+
                     fetchedBuses = fetchedBuses.filter(bus => {
                         const busPrefix = bus['Bus Code'].split(' ')[0].toUpperCase();
-                        
+
                         // KT supervisors see both KT and PU buses
                         if (busType === 'KT') {
                             return busPrefix === 'KT' || busPrefix === 'PU';
                         }
-                        
+
                         // Other supervisors see only their type
                         return busPrefix === busType;
                     });
@@ -96,14 +95,14 @@ const TemporaryEdits = ({ userRole }) => {
         };
 
         fetchData();
-    }, [shift, direction, refreshKey, searchTerm, selectedTime, isSaturday]);
+    }, [shift, direction, refreshKey, searchTerm, selectedTime, isSaturday, userRole]);
 
     // Normalize bus number input
     const normalizeBusNumber = (input) => {
         // Remove all spaces and hyphens, then split into parts
         const cleaned = input.replace(/[\s-]/g, '');
         const match = cleaned.match(/^([a-zA-Z]+)(\d+)$/);
-        
+
         if (match) {
             const prefix = match[1].toUpperCase();
             const number = match[2];
@@ -141,11 +140,20 @@ const TemporaryEdits = ({ userRole }) => {
         if (!newNumber) return;
 
         try {
+            let collection;
+            if (isSaturday && shift === 'adminMedical' && direction === 'outgoing') {
+                collection = selectedTime === '1:15 PM'
+                    ? collectionMap.adminMedical.outgoing1
+                    : collectionMap.adminMedical.outgoing2;
+            } else {
+                collection = collectionMap[shift][direction];
+            }
+
             await axios.post(`${API_BASE_URL}/api/temp-edit/temp-edit`, {
                 type: 'bulk',
                 busId,
                 newBusNumber: newNumber,
-                collection: collectionMap[shift][direction]
+                collection: collection
             });
             toast.success('Bulk change saved');
             setRefreshKey(prev => prev + 1);
@@ -164,12 +172,21 @@ const TemporaryEdits = ({ userRole }) => {
         try {
             const bus = buses.find(b => b._id === busId);
 
+            let collection;
+            if (isSaturday && shift === 'adminMedical' && direction === 'outgoing') {
+                collection = selectedTime === '1:15 PM'
+                    ? collectionMap.adminMedical.outgoing1
+                    : collectionMap.adminMedical.outgoing2;
+            } else {
+                collection = collectionMap[shift][direction];
+            }
+
             await axios.post(`${API_BASE_URL}/api/temp-edit/temp-edit`, {
                 type: 'partial',
                 busId,
                 newBusNumber: newNumber,
                 stops: bus.Stops.filter((_, i) => selectedStops[busId].includes(i)),
-                collection: collectionMap[shift][direction]
+                collection: collection
             });
             toast.success('Partial changes saved');
             setSelectedStops(prev => ({ ...prev, [busId]: [] }));
@@ -179,6 +196,52 @@ const TemporaryEdits = ({ userRole }) => {
         }
 
         resetBusNumberInput(busId);
+    };
+
+    // Helper function to check if a stop is added to a bus
+    const isAddedToBus = (bus, stop) => {
+        // For partial changes - check if this stop was added TO this bus
+        const addedViaPartial = bus.partialChanges?.some(pc => 
+            // This bus is the DESTINATION (new bus number matches this bus)
+            // AND this stop is in the stops array
+            pc.newBusNumber === bus['Bus Code'] && 
+            pc.stops?.includes(stop)
+        ) || false;
+
+        // For bulk changes - check if this stop was added TO this bus
+        const addedViaBulk = bus.bulkChanges?.some(bc => 
+            // This bus is the DESTINATION (new bus number matches this bus)
+            // AND this stop is in the stops array
+            bc.newBusNumber === bus['Bus Code'] && 
+            bc.stops?.includes(stop)
+        ) || false;
+
+        return addedViaPartial || addedViaBulk;
+    };
+
+    // Helper function to check if a stop is removed from a bus
+    const isRemovedFromBus = (bus, stop) => {
+        // For partial changes - check if this stop was removed FROM this bus
+        const removedViaPartial = bus.partialChanges?.some(pc => 
+            // This bus is the SOURCE (busId matches this bus)
+            // AND the destination is different (newBusNumber doesn't match)
+            // AND this stop is in the stops array
+            pc.busId === bus._id.toString() && 
+            pc.newBusNumber !== bus['Bus Code'] && 
+            pc.stops?.includes(stop)
+        ) || false;
+
+        // For bulk changes - check if this stop was removed FROM this bus
+        const removedViaBulk = bus.bulkChanges?.some(bc => 
+            // This bus is the SOURCE (busId matches this bus)
+            // AND the destination is different (newBusNumber doesn't match)
+            // AND this stop is in the stops array (or all stops implied)
+            bc.busId === bus._id.toString() && 
+            bc.newBusNumber !== bus['Bus Code'] && 
+            (Array.isArray(bc.stops) ? bc.stops.includes(stop) : true)
+        ) || false;
+
+        return removedViaPartial || removedViaBulk;
     };
 
     return (
@@ -278,7 +341,10 @@ const TemporaryEdits = ({ userRole }) => {
 
             {/* Loading state */}
             {loading && (
-                <div className="loading-message">Loading bus data...</div>
+                <div className="loading-message">
+                    <div className="loading-spinner"></div>
+                    <p>Loading bus data...</p>
+                </div>
             )}
 
             {/* No data message */}
@@ -287,100 +353,146 @@ const TemporaryEdits = ({ userRole }) => {
             )}
 
             {/* Bus List */}
-            <div className="bus-cards-container">
-                {buses
-                    .reduce((merged, bus) => {
-                        const existing = merged.find(b => b['Bus Code'] === bus['Bus Code']);
-                        if (existing) {
-                            // Merge stops and preserve temporary status
-                            existing.Stops = [...new Set([...existing.Stops, ...bus.Stops])];
-                            existing.isTemporary = existing.isTemporary || bus.isTemporary;
-                            existing.partialChanges = [...(existing.partialChanges || []), ...(bus.partialChanges || [])];
-                            existing.bulkChanges = [...(existing.bulkChanges || []), ...(bus.bulkChanges || [])];
-                        } else {
-                            merged.push(bus);
-                        }
-                        return merged;
-                    }, [])
-                    .filter(bus => bus.Stops.length > 0) // Filter out buses with no stops
-                    .map(bus => {
-                        return (
-                            <div key={`${bus['Bus Code']}-${bus._id}`} className={`bus-card ${bus.isTemporary ? 'temporary' : ''}`}>
-                                <div className="bus-header">
-                                    <h3>
-                                        {bus['Bus Code']}
-                                        {bus.isTemporary && ' (Temporary Changes)'}
-                                    </h3>
-                                    <div className="bus-actions">
-                                        <input
-                                            type="text"
-                                            placeholder="New Bus #"
-                                            value={newBusNumbers[bus._id] || ''}
-                                            onChange={(e) => handleBusNumberChange(bus._id, e.target.value)}
-                                        />
-                                        <button
-                                            onClick={() => handleBulkChange(bus._id)}
-                                            disabled={!newBusNumbers[bus._id]?.trim() || selectedStops[bus._id]?.length > 0}
-                                            className="bulk-button"
-                                        >
-                                            Change All
-                                        </button>
+            {buses
+                .reduce((merged, bus) => {
+                    const existing = merged.find(b => b['Bus Code'] === bus['Bus Code']);
+                    if (existing) {
+                        // Merge stops and preserve temporary status
+                        existing.Stops = [...new Set([...existing.Stops, ...bus.Stops])];
+                        existing.isTemporary = existing.isTemporary || bus.isTemporary;
+                        existing.partialChanges = [...(existing.partialChanges || []), ...(bus.partialChanges || [])];
+                        existing.bulkChanges = [...(existing.bulkChanges || []), ...(bus.bulkChanges || [])];
+                    } else {
+                        merged.push(bus);
+                    }
+                    return merged;
+                }, [])
+                .filter(bus => bus.Stops.length > 0) // Filter out buses with no stops
+                .map(bus => {
+                    // Calculate stats
+                    const totalStops = bus.Stops.length;
+
+                    // Calculate added stops
+                    const tempStops = bus.Stops.filter(stop => isAddedToBus(bus, stop)).length;
+
+                    // Calculate removed stops
+                    const removedStops = bus.Stops.filter(stop => isRemovedFromBus(bus, stop)).length;
+
+                    const selectedCount = selectedStops[bus._id]?.length || 0;
+
+                    // Determine bus card classes based on status
+                    const busCardClasses = ['bus-card'];
+                    if (bus.isTemporary) busCardClasses.push('temporary');
+                    if (tempStops > 0) busCardClasses.push('added');
+                    if (removedStops > 0) busCardClasses.push('removed');
+
+                    return (
+                        <div key={`${bus['Bus Code']}-${bus._id}`} className={busCardClasses.join(' ')}>
+                            <div className="bus-header">
+                                <h3>
+                                    <span className="bus-icon">🚌</span> {bus['Bus Code']}
+                                    <div className="badge-container">
+                                        {/* Always show temporary tag if bus has any modifications */}
+                                        {(bus.isTemporary || tempStops > 0 || removedStops > 0) && 
+                                            <span className="temp-badge">Temporary</span>}
+                                        {tempStops > 0 && <span className="added-badge">Added</span>}
+                                        {removedStops > 0 && <span className="removed-badge">Removed</span>}
                                     </div>
+                                </h3>
+                                <div className="bus-actions">
+                                    <input
+                                        type="text"
+                                        placeholder="New Bus #"
+                                        value={newBusNumbers[bus._id] || ''}
+                                        onChange={(e) => handleBusNumberChange(bus._id, e.target.value)}
+                                    />
+                                    <button
+                                        onClick={() => handleBulkChange(bus._id)}
+                                        disabled={selectedStops[bus._id]?.length > 0 || !newBusNumbers[bus._id]?.trim()}
+                                        className="bulk-button"
+                                    >
+                                        Change All
+                                    </button>
                                 </div>
-                                <div className="stops-list">
-                                    {bus.Stops.map((stop, index) => {
-                                        // Check if the stop is part of a partial change
-                                        const isTempStop = bus.partialChanges?.some(pc => {
-                                            if (!pc.stops || !Array.isArray(pc.stops)) {
-                                                console.error("Invalid partialChanges.stops:", pc.stops);
-                                                return false;
-                                            }
-                                            return pc.stops.includes(stop);
-                                        });
+                            </div>
 
-                                        // Check if the stop is part of a bulk change
-                                        const isBulkStop = bus.bulkChanges?.some(bc => {
-                                            if (!bc.stops || !Array.isArray(bc.stops)) {
-                                                return false;
-                                            }
-                                            return bc.stops.includes(stop);
-                                        });
+                            {/* Stats display */}
+                            <div className="stops-stats">
+                                <span className="stat">
+                                    <span className="stat-value">{totalStops}</span>
+                                    <span className="stat-label">Total Stops</span>
+                                </span>
+                                {tempStops > 0 && (
+                                    <span className="stat">
+                                        <span className="stat-value temp-value">{tempStops}</span>
+                                        <span className="stat-label">Added</span>
+                                    </span>
+                                )}
+                                {removedStops > 0 && (
+                                    <span className="stat">
+                                        <span className="stat-value removed-value">{removedStops}</span>
+                                        <span className="stat-label">Removed</span>
+                                    </span>
+                                )}
+                                {selectedCount > 0 && (
+                                    <span className="stat">
+                                        <span className="stat-value selected-value">{selectedCount}</span>
+                                        <span className="stat-label">Selected</span>
+                                    </span>
+                                )}
+                            </div>
 
-                                        return (
-                                            <div
-                                                key={`${bus._id}-${index}`}
-                                                className={`stop-item ${isTempStop || isBulkStop ? 'temp-stop' : ''}`}
-                                                onClick={() => !isTempStop && !isBulkStop && handleStopSelect(bus._id, index)}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedStops[bus._id]?.includes(index)}
-                                                    readOnly
-                                                    disabled={isTempStop || isBulkStop}
-                                                />
+                            <div className="stops-list">
+                                {bus.Stops.map((stop, index) => {
+                                    // Determine if this stop is added to this bus or removed from it
+                                    const isAdded = isAddedToBus(bus, stop);
+                                    const isRemoved = isRemovedFromBus(bus, stop);
+                                    
+                                    // Determine stop item classes based on status
+                                    const stopItemClasses = ['stop-item'];
+                                    if (isAdded) stopItemClasses.push('added-stop');
+                                    if (isRemoved) stopItemClasses.push('removed-stop');
+                                    if (selectedStops[bus._id]?.includes(index)) stopItemClasses.push('selected-stop');
+
+                                    return (
+                                        <div
+                                            key={`${bus._id}-${index}`}
+                                            className={stopItemClasses.join(' ')}
+                                            onClick={() => !isAdded && !isRemoved && handleStopSelect(bus._id, index)}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedStops[bus._id]?.includes(index)}
+                                                readOnly
+                                                disabled={isAdded || isRemoved}
+                                            />
+                                            <div className="stop-name">
                                                 <span>{stop}</span>
-                                                {(isTempStop || isBulkStop) && (
-                                                    <span className="temp-badge">Temporary</span>
+                                                {isRemoved && (
+                                                    <span className="removed-badge">Removed</span>
+                                                )}
+                                                {isAdded && (
+                                                    <span className="added-badge">Added</span>
                                                 )}
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                                {selectedStops[bus._id]?.length > 0 ? (
-                                    <button
-                                        className="partial-save"
-                                        onClick={() => handlePartialChange(bus._id)}
-                                        disabled={!newBusNumbers[bus._id]?.trim()}
-                                    >
-                                        {newBusNumbers[bus._id]?.trim() 
-                                            ? `Save for ${selectedStops[bus._id].length} selected stops` 
-                                            : `Enter a new bus number for ${selectedStops[bus._id].length} selected stops`}
-                                    </button>
-                                ) : null}
+                                        </div>
+                                    );
+                                })}
                             </div>
-                        );
-                    })}
-            </div>
+                            {selectedStops[bus._id]?.length > 0 && (
+                                <button
+                                    className={`partial-save ${!newBusNumbers[bus._id]?.trim() ? 'needs-input' : ''}`}
+                                    onClick={() => handlePartialChange(bus._id)}
+                                    disabled={!newBusNumbers[bus._id]?.trim()}
+                                >
+                                    {newBusNumbers[bus._id]?.trim()
+                                        ? `Change ${selectedStops[bus._id].length} selected stops to ${newBusNumbers[bus._id].trim()}`
+                                        : `Enter a new bus number for ${selectedStops[bus._id].length} selected stops`}
+                                </button>
+                            )}
+                        </div>
+                    );
+                })}
 
             <ToastContainer position="top-right" autoClose={3000} />
         </div>
